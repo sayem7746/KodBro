@@ -1,4 +1,4 @@
-# Replit App (Ionic + Tailwind)
+# KodBro (Ionic + Tailwind)
 
 Ionic Angular app with splash screen, welcome page, and auth page, styled with Tailwind CSS and a custom color palette.
 
