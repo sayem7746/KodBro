@@ -1,2 +1,19 @@
 // For information on how to create your own theme, please refer to:
 // https://ionicframework.com/docs/theming/
+
+// App color palette (Tailwind: maroon, red, cream, navy, steel)
+:root {
+  --ion-color-primary: #22374f;
+  --ion-color-primary-rgb: 34, 55, 79;
+  --ion-color-primary-contrast: #f8f2e4;
+  --ion-color-primary-contrast-rgb: 248, 242, 228;
+  --ion-color-primary-shade: #1e3146;
+  --ion-color-primary-tint: #384b61;
+
+  --ion-color-secondary: #d13e3b;
+  --ion-color-secondary-rgb: 209, 62, 59;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #b83633;
+  --ion-color-secondary-tint: #d6514f;
+}

@@ -1,0 +1,56 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar class="bg-cream">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/welcome" class="text-navy"></ion-back-button>
+    </ion-buttons>
+    <ion-title class="text-navy font-semibold">Sign in</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="bg-cream">
+  <div class="auth-inner flex flex-col min-h-full px-6 py-8">
+    <!-- Palette strip -->
+    <div class="flex rounded-full overflow-hidden h-2 w-full max-w-xs mb-8">
+      <span class="flex-1 bg-maroon"></span>
+      <span class="flex-1 bg-red"></span>
+      <span class="flex-1 bg-cream"></span>
+      <span class="flex-1 bg-navy"></span>
+      <span class="flex-1 bg-steel"></span>
+    </div>
+
+    <h1 class="text-navy text-xl font-bold mb-1">Welcome back</h1>
+    <p class="text-navy/70 text-sm mb-8">Enter your details to continue.</p>
+
+    <form class="space-y-4">
+      <ion-item lines="none" class="auth-input rounded-xl bg-white/80 border border-steel/30 ion-no-padding">
+        <ion-label position="stacked" class="text-navy font-medium">Email</ion-label>
+        <ion-input
+          type="email"
+          placeholder="you@example.com"
+          class="text-navy"
+        ></ion-input>
+      </ion-item>
+      <ion-item lines="none" class="auth-input rounded-xl bg-white/80 border border-steel/30 ion-no-padding">
+        <ion-label position="stacked" class="text-navy font-medium">Password</ion-label>
+        <ion-input
+          type="password"
+          placeholder="••••••••"
+          class="text-navy"
+        ></ion-input>
+      </ion-item>
+
+      <ion-button
+        expand="block"
+        type="submit"
+        class="ion-button--red mt-6 h-12 rounded-xl font-semibold"
+      >
+        Sign in
+      </ion-button>
+
+      <p class="text-center text-steel text-sm mt-4">
+        Don't have an account?
+        <a href="#" class="text-red font-medium">Create one</a>
+      </p>
+    </form>
+  </div>
+</ion-content>
