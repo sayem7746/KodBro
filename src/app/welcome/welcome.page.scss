@@ -1,13 +1,18 @@
+// Same as global .app-text for consistency
+.welcome-text {
+  color: #f8f5ed;
+}
+
 ion-button.ion-button--red {
   --background: #d13e3b;
   --background-hover: #b83533;
   --background-activated: #a02f2d;
-  --color: #f8f2e4;
+  --color: #f8f5ed;
 }
 
-ion-button.ion-button--outline-navy {
-  --border-color: #22374f;
-  --color: #22374f;
-  --background-hover: rgba(34, 55, 79, 0.08);
-  --background-activated: rgba(34, 55, 79, 0.12);
+ion-button.ion-button--outline-light {
+  --border-color: #f8f5ed;
+  --color: #f8f5ed;
+  --background-hover: rgba(248, 245, 237, 0.1);
+  --background-activated: rgba(248, 245, 237, 0.15);
 }

@@ -39,3 +39,15 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
+
+/* App text color for visibility on light and dark backgrounds */
+.app-text {
+  color: #f8f5ed;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ion-text-color: #f8f5ed;
+    --ion-toolbar-color: #f8f5ed;
+  }
+}

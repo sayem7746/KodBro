@@ -1,0 +1,188 @@
+<ion-header [translucent]="true">
+  <ion-toolbar class="app-text">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Build with Agent</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="bg-cream app-text">
+  <div class="agent-inner px-4 py-4 max-w-2xl mx-auto flex flex-col gap-4">
+    @if (!sessionId) {
+      <!-- Start: describe what to build -->
+      <div class="start-form flex flex-col gap-4">
+        <p class="text-navy/90">Describe what you want to build. The agent will create files and run commands for you.</p>
+        <ion-item lines="none" class="agent-item">
+          <ion-textarea
+            label="What do you want to build?"
+            labelPlacement="stacked"
+            [(ngModel)]="initialPrompt"
+            placeholder="e.g. A Next.js todo app with dark mode and categories"
+            rows="4"
+          ></ion-textarea>
+        </ion-item>
+        @if (error) {
+          <ion-note color="danger" class="block px-2">{{ error }}</ion-note>
+        }
+        <ion-button (click)="startSession()" [disabled]="starting" expand="block">
+          {{ starting ? 'Starting…' : 'Start' }}
+        </ion-button>
+      </div>
+    } @else {
+      <!-- Chat -->
+      <div class="chat-panel flex flex-col flex-1 min-h-[300px] rounded-xl border border-navy/20 overflow-hidden">
+        <div class="chat-messages flex-1 overflow-y-auto p-3 space-y-3">
+          @for (msg of messages; track $index) {
+            <div
+              class="message flex"
+              [class.justify-end]="msg.role === 'user'"
+              [class.justify-start]="msg.role === 'assistant'"
+            >
+              <div
+                class="message-bubble max-w-[85%] px-3 py-2 rounded-lg"
+                [class.bg-navy/20]="msg.role === 'user'"
+                [class.ml-auto]="msg.role === 'user'"
+                [class.bg-navy/10]="msg.role === 'assistant'"
+              >
+                <div class="whitespace-pre-wrap text-sm">{{ msg.content }}</div>
+                @if (msg.toolSummary && msg.toolSummary.length > 0) {
+                  <div class="tool-summary mt-2 text-xs text-navy/70">
+                    Ran: {{ msg.toolSummary.slice(-3).join('; ') }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          @if (loading) {
+            <div class="message flex justify-start">
+              <div class="message-bubble bg-navy/10 px-3 py-2 rounded-lg text-sm text-navy/80">
+                Agent is running…
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (error) {
+          <ion-note color="danger" class="block px-3 py-2">{{ error }}</ion-note>
+        }
+
+        <div class="chat-input p-3 border-t border-navy/10 flex gap-2">
+          <ion-textarea
+            [(ngModel)]="chatInput"
+            placeholder="Ask for changes or additions…"
+            rows="2"
+            class="flex-1"
+            [disabled]="loading"
+          ></ion-textarea>
+          <ion-button (click)="sendMessage()" [disabled]="loading || !chatInput.trim()">
+            Send
+          </ion-button>
+        </div>
+      </div>
+
+      <div class="actions flex gap-2">
+        <ion-button (click)="openDeployForm()">Deploy</ion-button>
+        <ion-button fill="outline" (click)="goHome()">Back to home</ion-button>
+      </div>
+    }
+  </div>
+
+  <!-- Deploy modal / form -->
+  @if (showDeployForm) {
+    <div class="deploy-overlay fixed inset-0 bg-black/50 z-10 flex items-center justify-center p-4">
+      <div class="deploy-form bg-cream rounded-xl p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold mb-3">Deploy to GitHub & Vercel</h3>
+        <form (ngSubmit)="deploy()" class="flex flex-col gap-3">
+          <ion-item lines="none">
+            <ion-input
+              label="App name"
+              labelPlacement="stacked"
+              [(ngModel)]="deployAppName"
+              name="deployAppName"
+              placeholder="my-awesome-app"
+            ></ion-input>
+          </ion-item>
+          <ion-item lines="full" class="section-label">
+            <ion-label><strong>Git (GitHub)</strong></ion-label>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-input
+              label="Personal access token"
+              labelPlacement="stacked"
+              type="password"
+              [(ngModel)]="gitToken"
+              name="gitToken"
+              placeholder="ghp_..."
+            ></ion-input>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-checkbox [(ngModel)]="gitCreateNew" name="gitCreateNew" labelPlacement="end">
+              Create new repository
+            </ion-checkbox>
+          </ion-item>
+          @if (!gitCreateNew) {
+            <ion-item lines="none">
+              <ion-input
+                label="Repository URL"
+                labelPlacement="stacked"
+                [(ngModel)]="gitRepoUrl"
+                name="gitRepoUrl"
+                placeholder="https://github.com/username/repo"
+              ></ion-input>
+            </ion-item>
+          }
+          <ion-item lines="full" class="section-label">
+            <ion-label><strong>Vercel</strong></ion-label>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-input
+              label="Vercel API token"
+              labelPlacement="stacked"
+              type="password"
+              [(ngModel)]="vercelToken"
+              name="vercelToken"
+              placeholder="..."
+            ></ion-input>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-input
+              label="Team ID (optional)"
+              labelPlacement="stacked"
+              [(ngModel)]="vercelTeamId"
+              name="vercelTeamId"
+            ></ion-input>
+          </ion-item>
+
+          @if (deployResult) {
+            <div class="deploy-result p-3 rounded" [class.deploy-ok]="deploySuccess" [class.deploy-fail]="!deploySuccess">
+              @if (deploySuccess) {
+                <p class="text-sm">Deployed successfully.</p>
+                @if (deployResult.repo_url) {
+                  <a [href]="deployResult.repo_url" target="_blank" rel="noopener" class="deploy-link">Open repo</a>
+                }
+                @if (deployResult.deploy_url) {
+                  <a [href]="deployResult.deploy_url" target="_blank" rel="noopener" class="deploy-link">Open app</a>
+                }
+              } @else {
+                <p class="text-sm">{{ deployResult.error || 'Deploy failed' }}</p>
+                @if (deployResult.repo_url) {
+                  <a [href]="deployResult.repo_url" target="_blank" rel="noopener" class="deploy-link">Open repo</a>
+                }
+              }
+            </div>
+          }
+
+          <div class="flex gap-2 mt-2">
+            <ion-button type="submit" [disabled]="deploying">
+              {{ deploying ? 'Deploying…' : 'Deploy' }}
+            </ion-button>
+            <ion-button fill="outline" type="button" (click)="closeDeployForm()">
+              Close
+            </ion-button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</ion-content>

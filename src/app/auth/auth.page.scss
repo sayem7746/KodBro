@@ -5,9 +5,18 @@
   --min-height: 52px;
 }
 
+.auth-inner ion-input {
+  --color: var(--app-text-color, #f8f5ed);
+  --placeholder-color: rgba(248, 245, 237, 0.7);
+}
+
+.auth-link {
+  color: #e8a09e;
+}
+
 ion-button.ion-button--red {
   --background: #d13e3b;
   --background-hover: #b83533;
   --background-activated: #a02f2d;
-  --color: #f8f2e4;
+  --color: #f8f5ed;
 }

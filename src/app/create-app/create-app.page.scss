@@ -1,0 +1,57 @@
+.create-app-inner {
+  .create-app-item {
+    --background: transparent;
+    --padding-start: 0;
+    --inner-padding-end: 0;
+  }
+  .section-label {
+    --background: transparent;
+    --padding-start: 0;
+    margin-top: 0.5rem;
+  }
+  ion-input,
+  ion-textarea {
+    --background: rgba(34, 55, 79, 0.06);
+    --padding-start: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(34, 55, 79, 0.15);
+  }
+}
+
+.status-box {
+  background: rgba(34, 55, 79, 0.06);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid rgba(34, 55, 79, 0.15);
+  .status-message {
+    margin: 0 0 0.5rem 0;
+    color: var(--ion-text-color);
+  }
+  .status-badge {
+    margin: 0;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    &.done {
+      color: var(--ion-color-success);
+    }
+    &.failed {
+      color: var(--ion-color-danger);
+    }
+  }
+  .result-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .result-link {
+    color: var(--ion-color-primary);
+    text-decoration: underline;
+  }
+}
+
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.flex { display: flex; }
+.gap-2 { gap: 0.5rem; }

@@ -1,0 +1,258 @@
+"""
+Agent loop with Gemini function calling.
+Tools: read_file, write_file, list_dir, run_command.
+"""
+import os
+import subprocess
+from typing import Any, Optional
+
+GEMINI_MODEL = os.environ.get("GEMINI_APP_MODEL", "gemini-2.0-flash")
+COMMAND_TIMEOUT = 120
+
+# Paths must be relative, no .., no leading /
+def _validate_path(path: str) -> bool:
+    if path is None or path.startswith("/") or ".." in path:
+        return False
+    if path == "":
+        return False
+    # Normalize and ensure we don't escape project dir
+    normalized = os.path.normpath(path)
+    return not normalized.startswith("..")
+
+
+def read_file(project_dir: str, path: str) -> dict[str, Any]:
+    """Read file content. Returns {content: str} or {error: str}."""
+    if not _validate_path(path):
+        return {"error": "Invalid path"}
+    full = os.path.join(project_dir, path)
+    if not os.path.abspath(full).startswith(os.path.abspath(project_dir)):
+        return {"error": "Path escapes project directory"}
+    try:
+        with open(full, "r", encoding="utf-8", errors="replace") as f:
+            return {"content": f.read()}
+    except IsADirectoryError:
+        return {"error": "Path is a directory, not a file"}
+    except FileNotFoundError:
+        return {"error": "File not found"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def write_file(project_dir: str, path: str, content: str) -> dict[str, Any]:
+    """Write file. Returns {success: bool, path: str} or {error: str}."""
+    if not _validate_path(path):
+        return {"error": "Invalid path"}
+    full = os.path.join(project_dir, path)
+    if not os.path.abspath(full).startswith(os.path.abspath(project_dir)):
+        return {"error": "Path escapes project directory"}
+    try:
+        d = os.path.dirname(full)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        with open(full, "w", encoding="utf-8") as f:
+            f.write(content)
+        return {"success": True, "path": path}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def list_dir(project_dir: str, path: str = ".") -> dict[str, Any]:
+    """List directory contents. Returns {entries: [{name, type}], path: str} or {error: str}."""
+    if not _validate_path(path):
+        return {"error": "Invalid path"}
+    full = os.path.join(project_dir, path)
+    if not os.path.abspath(full).startswith(os.path.abspath(project_dir)):
+        return {"error": "Path escapes project directory"}
+    try:
+        if not os.path.isdir(full):
+            return {"error": "Not a directory"}
+        entries = []
+        for name in sorted(os.listdir(full)):
+            p = os.path.join(full, name)
+            entries.append({
+                "name": name,
+                "type": "directory" if os.path.isdir(p) else "file",
+            })
+        return {"entries": entries, "path": path}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def run_command(project_dir: str, command: str) -> dict[str, Any]:
+    """Run shell command in project directory. Returns {ok, stdout, stderr, exit_code} or {error}."""
+    if not command or not command.strip():
+        return {"error": "Empty command"}
+    try:
+        result = subprocess.run(
+            ["/bin/bash", "-c", command],
+            capture_output=True,
+            text=True,
+            timeout=COMMAND_TIMEOUT,
+            cwd=project_dir,
+            env=os.environ.copy(),
+        )
+        return {
+            "ok": result.returncode == 0,
+            "stdout": result.stdout or "",
+            "stderr": result.stderr or "",
+            "exit_code": result.returncode,
+        }
+    except subprocess.TimeoutExpired:
+        return {"error": "Command timed out", "ok": False}
+    except Exception as e:
+        return {"error": str(e), "ok": False}
+
+
+def _execute_tool(project_dir: str, name: str, args: dict[str, Any]) -> dict[str, Any]:
+    """Execute a tool by name and return result dict."""
+    if name == "read_file":
+        return read_file(project_dir, args.get("path", ""))
+    if name == "write_file":
+        return write_file(project_dir, args.get("path", ""), args.get("content", ""))
+    if name == "list_dir":
+        return list_dir(project_dir, args.get("path", "."))
+    if name == "run_command":
+        return run_command(project_dir, args.get("command", ""))
+    return {"error": f"Unknown tool: {name}"}
+
+
+def _get_tool_declarations() -> list:
+    """Return Gemini function declarations for our tools."""
+    from google.genai import types
+
+    return [
+        types.FunctionDeclaration(
+            name="read_file",
+            description="Read the contents of a file in the project. Use relative path (e.g. 'src/app/page.tsx').",
+            parameters={
+                "type": "object",
+                "properties": {"path": {"type": "string", "description": "Relative file path"}},
+                "required": ["path"],
+            },
+        ),
+        types.FunctionDeclaration(
+            name="write_file",
+            description="Create or overwrite a file with the given content. Use relative path. Creates parent directories if needed.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Relative file path"},
+                    "content": {"type": "string", "description": "Full file content"},
+                },
+                "required": ["path", "content"],
+            },
+        ),
+        types.FunctionDeclaration(
+            name="list_dir",
+            description="List files and directories in a path. Use '.' for project root.",
+            parameters={
+                "type": "object",
+                "properties": {"path": {"type": "string", "description": "Relative path, default '.'"}},
+                "required": [],
+            },
+        ),
+        types.FunctionDeclaration(
+            name="run_command",
+            description="Run a shell command in the project directory (e.g. npm install, npm run build). Use for installing deps and building.",
+            parameters={
+                "type": "object",
+                "properties": {"command": {"type": "string", "description": "Shell command to run"}},
+                "required": ["command"],
+            },
+        ),
+    ]
+
+
+SYSTEM_INSTRUCTION = """You are an expert app-building agent. You help users create web applications by creating files and running commands in a project directory.
+
+You have access to:
+- read_file(path): read a file
+- write_file(path, content): create or overwrite a file
+- list_dir(path): list directory contents (use "." for project root)
+- run_command(command): run shell commands (e.g. npm install, npm run build)
+
+Rules:
+- Prefer Next.js or React for web apps. Create package.json, source files, and ensure the app builds.
+- After creating files, run npm install and npm run build to verify. If build fails, read the error and fix the code.
+- Use relative paths only. Start with list_dir(".") to see the project structure.
+- Be concise in replies. After completing a task, summarize what you did.
+- If the user asks for an app, create a complete runnable project."""
+
+
+def run_agent_loop(
+    project_dir: str,
+    messages: list[dict],
+    api_key: Optional[str] = None,
+    max_tool_rounds: int = 15,
+) -> tuple[str, list[str]]:
+    """
+    Run the agent loop: send messages to Gemini, execute tool calls, repeat until done.
+    Returns (final_reply_text, tool_summary_list).
+    """
+    api_key = api_key or os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not set")
+
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+    tools = types.Tool(function_declarations=_get_tool_declarations())
+
+    # Convert messages to Content format
+    def to_content(msg: dict) -> types.Content:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        if isinstance(content, list):
+            parts = []
+            for p in content:
+                if isinstance(p, dict):
+                    if "function_call" in p:
+                        fc = p["function_call"]
+                        parts.append(types.Part.from_function_call(name=fc["name"], args=fc.get("args", {})))
+                    elif "function_response" in p:
+                        fr = p["function_response"]
+                        parts.append(types.Part.from_function_response(name=fr["name"], response=fr["response"]))
+                    elif "text" in p:
+                        parts.append(types.Part.from_text(text=p["text"]))
+                else:
+                    parts.append(types.Part.from_text(text=str(p)))
+            return types.Content(role=role, parts=parts)
+        return types.Content(role=role, parts=[types.Part.from_text(text=str(content))])
+
+    contents = [to_content(m) for m in messages]
+    tool_summary: list[str] = []
+    rounds = 0
+
+    while rounds < max_tool_rounds:
+        rounds += 1
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
+                tools=[tools],
+                temperature=0.2,
+            ),
+        )
+
+        function_calls = response.function_calls if hasattr(response, "function_calls") else None
+        if not function_calls:
+            text = response.text if hasattr(response, "text") else ""
+            return (text or "Done.").strip(), tool_summary
+
+        # Add model response (with function calls) to contents
+        contents.append(response.candidates[0].content)
+
+        # Execute tools and build function responses
+        user_parts = []
+        for fc in function_calls:
+            name = fc.name or ""
+            args = fc.args or {}
+            result = _execute_tool(project_dir, name, args)
+            tool_summary.append(f"{name}({', '.join(f'{k}={repr(v)[:50]}' for k, v in args.items())}) -> {str(result)[:80]}")
+            user_parts.append(types.Part.from_function_response(name=name, response=result))
+
+        contents.append(types.Content(role="user", parts=user_parts))
+
+    return "Reached maximum tool rounds. Please try a simpler request.", tool_summary

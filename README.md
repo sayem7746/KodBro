@@ -21,7 +21,7 @@ Ionic Angular app with splash screen, welcome page, and auth page, styled with T
 ## Run locally
 
 ```bash
-cd replit-app
+cd KodBro-app
 npm install
 npm start
 ```

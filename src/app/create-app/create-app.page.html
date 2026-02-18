@@ -1,0 +1,143 @@
+<ion-header [translucent]="true">
+  <ion-toolbar class="app-text">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Create app</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="bg-cream app-text">
+  <div class="create-app-inner px-4 py-4 max-w-2xl mx-auto">
+    @if (!jobId && !(status && (status.status === 'done' || status.status === 'failed'))) {
+      <form (ngSubmit)="submit()" class="flex flex-col gap-4">
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="App name"
+            labelPlacement="stacked"
+            [(ngModel)]="appName"
+            name="appName"
+            placeholder="my-awesome-app"
+            required
+          ></ion-input>
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-textarea
+            label="Description"
+            labelPlacement="stacked"
+            [(ngModel)]="description"
+            name="description"
+            placeholder="Short description of your app"
+            rows="2"
+          ></ion-textarea>
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-textarea
+            label="Prompt"
+            labelPlacement="stacked"
+            [(ngModel)]="prompt"
+            name="prompt"
+            placeholder="e.g. A todo app with dark mode and categories"
+            rows="3"
+            required
+          ></ion-textarea>
+        </ion-item>
+
+        <ion-item lines="full" class="section-label">
+          <ion-label><strong>Git (GitHub)</strong></ion-label>
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Personal access token"
+            labelPlacement="stacked"
+            type="password"
+            [(ngModel)]="gitToken"
+            name="gitToken"
+            placeholder="ghp_..."
+            required
+          ></ion-input>
+        </ion-item>
+        <ion-item lines="none">
+          <ion-checkbox [(ngModel)]="gitCreateNew" name="gitCreateNew" labelPlacement="end">
+            Create new repository
+          </ion-checkbox>
+        </ion-item>
+        @if (!gitCreateNew) {
+          <ion-item lines="none" class="create-app-item">
+            <ion-input
+              label="Repository URL"
+              labelPlacement="stacked"
+              [(ngModel)]="gitRepoUrl"
+              name="gitRepoUrl"
+              placeholder="https://github.com/username/repo"
+            ></ion-input>
+          </ion-item>
+        }
+
+        <ion-item lines="full" class="section-label">
+          <ion-label><strong>Vercel</strong></ion-label>
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Vercel API token"
+            labelPlacement="stacked"
+            type="password"
+            [(ngModel)]="vercelToken"
+            name="vercelToken"
+            placeholder="..."
+            required
+          ></ion-input>
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Team ID (optional)"
+            labelPlacement="stacked"
+            [(ngModel)]="vercelTeamId"
+            name="vercelTeamId"
+          ></ion-input>
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Project name (optional)"
+            labelPlacement="stacked"
+            [(ngModel)]="vercelProjectName"
+            name="vercelProjectName"
+          ></ion-input>
+        </ion-item>
+
+        @if (error) {
+          <ion-note color="danger" class="block px-2">{{ error }}</ion-note>
+        }
+        <ion-button type="submit" expand="block" [disabled]="submitting">
+          {{ submitting ? 'Starting…' : 'Create app' }}
+        </ion-button>
+      </form>
+    } @else {
+      <div class="status-box">
+        <p class="status-message">{{ status?.message ?? 'Loading…' }}</p>
+        <p class="status-badge" [class.done]="status?.status === 'done'" [class.failed]="status?.status === 'failed'">
+          {{ status?.status ?? 'pending' }}
+        </p>
+        @if (status?.error) {
+          <ion-note color="danger" class="block mt-2">{{ status?.error }}</ion-note>
+        }
+        @if (isSuccess && (status?.repo_url || status?.deploy_url)) {
+          <div class="result-links mt-3">
+            @if (status?.repo_url) {
+              <a [href]="status?.repo_url" target="_blank" rel="noopener" class="result-link">Open repo</a>
+            }
+            @if (status?.deploy_url) {
+              <a [href]="status?.deploy_url" target="_blank" rel="noopener" class="result-link">Open app</a>
+            }
+          </div>
+        }
+        @if (isFinished) {
+          <div class="mt-4 flex gap-2">
+            <ion-button fill="outline" (click)="reset()">Create another</ion-button>
+            <ion-button (click)="goHome()">Back to home</ion-button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</ion-content>

@@ -1,27 +1,99 @@
-#container {
-  text-align: center;
-
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+.home-inner {
+  min-height: 100%;
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+.terminal-panel {
+  background: #1a1d23;
+  color: #e4e4e7;
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
-  margin: 0;
+.terminal-header {
+  background: #252830;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-#container a {
-  text-decoration: none;
+.ssh-bar {
+  background: rgba(34, 55, 79, 0.15);
+}
+
+.terminal-input.server-url-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 55, 79, 0.3);
+  background: #1a1d23;
+  color: #e4e4e7;
+  font-size: 13px;
+}
+
+.terminal-output {
+  background: #1a1d23;
+  color: #e4e4e7;
+  line-height: 1.5;
+}
+
+.terminal-line {
+  word-break: break-all;
+  white-space: pre-wrap;
+
+  &.cmd {
+    color: #f8f2e4;
+  }
+
+  &.out {
+    color: #85a9cb;
+  }
+
+  &.err {
+    color: #d13e3b;
+  }
+}
+
+.terminal-prompt {
+  color: #ca8a04;
+  font-weight: 500;
+}
+
+.terminal-cmd-input {
+  flex: 1;
+  min-width: 120px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8f2e4;
+  font: inherit;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+
+  &::placeholder {
+    color: rgba(248, 242, 228, 0.4);
+  }
+}
+
+.terminal-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &.connect {
+    background: #22374f;
+    color: #f8f2e4;
+
+    &:hover {
+      background: #2d4560;
+    }
+  }
+
+  &.disconnect {
+    background: rgba(209, 62, 59, 0.2);
+    color: #d13e3b;
+
+    &:hover {
+      background: rgba(209, 62, 59, 0.35);
+    }
+  }
 }

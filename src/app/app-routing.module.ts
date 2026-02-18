@@ -23,6 +23,14 @@ const routes: Routes = [
     path: 'auth',
     loadChildren: () => import('./auth/auth.module').then( m => m.AuthPageModule)
   },
+  {
+    path: 'create-app',
+    loadChildren: () => import('./create-app/create-app.module').then( m => m.CreateAppPageModule)
+  },
+  {
+    path: 'agent',
+    loadChildren: () => import('./agent/agent.module').then( m => m.AgentPageModule)
+  },
 ];
 
 @NgModule({

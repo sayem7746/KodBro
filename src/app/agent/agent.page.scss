@@ -1,0 +1,42 @@
+.agent-inner {
+  min-height: 100%;
+}
+
+.agent-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.section-label {
+  --background: transparent;
+  --padding-start: 0;
+}
+
+.chat-messages {
+  min-height: 200px;
+}
+
+.message-bubble {
+  word-break: break-word;
+}
+
+.deploy-overlay {
+  z-index: 1000;
+}
+
+.deploy-result {
+  &.deploy-ok {
+    background: rgba(34, 197, 94, 0.2);
+  }
+  &.deploy-fail {
+    background: rgba(239, 68, 68, 0.2);
+  }
+}
+
+.deploy-link {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--ion-color-primary);
+  text-decoration: underline;
+}
