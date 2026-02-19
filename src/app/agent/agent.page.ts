@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   AgentService,
   CreateSessionResponse,
@@ -47,10 +47,15 @@ export class AgentPage implements OnInit {
   constructor(
     private agent: AgentService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    // Session is created on first user action (start or send)
+    const prompt = this.route.snapshot.queryParamMap.get('prompt');
+    if (prompt?.trim()) {
+      this.initialPrompt = prompt.trim();
+      void this.startSession();
+    }
   }
 
   async startSession(): Promise<void> {

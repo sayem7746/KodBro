@@ -105,7 +105,7 @@ Railway supports long-running servers, so you get the full API, WebSocket termin
    ```bash
    cd backend
    railway init   # create new project or link existing
-   railway up     # deploy
+   railway up --service KodBro_api   # deploy (or just railway up if service is linked)
    ```
 4. In the Railway dashboard → your service → **Settings** → **Networking** → **Generate Domain** to get a public URL.
 5. Set **Root Directory** to `backend` if deploying from the monorepo root (or run `railway up` from inside `backend`).

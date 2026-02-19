@@ -49,6 +49,13 @@ export class HomePage implements OnInit, AfterViewChecked {
       this.router.navigate(['/create-app']);
       return;
     }
+    // Natural language like "create a movie" or "create an app" → route to Agent
+    const lower = cmd.toLowerCase();
+    if (lower.startsWith('create ') && lower.length > 7) {
+      this.commandInput = '';
+      this.router.navigate(['/agent'], { queryParams: { prompt: cmd } });
+      return;
+    }
     this.terminal.executeCommand(cmd);
     this.commandInput = '';
     this.shouldScroll = true;

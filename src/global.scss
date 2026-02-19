@@ -40,7 +40,38 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
 
-/* App text color for visibility on light and dark backgrounds */
+/* Cream background pages - ensure background and readable text (web + iOS) */
+ion-content.bg-cream {
+  --background: #f8f2e4;
+  --color: #22374f;
+  --ion-text-color: #22374f;
+}
+
+ion-content.bg-cream ion-input,
+ion-content.bg-cream ion-textarea,
+ion-content.bg-cream ion-item,
+ion-content.bg-cream ion-label {
+  --color: #22374f;
+}
+
+ion-content.bg-cream ion-input,
+ion-content.bg-cream ion-textarea {
+  --placeholder-color: rgba(34, 55, 79, 0.5);
+}
+
+/* Override cream text when on cream background - navy for readability */
+ion-content.bg-cream .app-text,
+ion-header:has(+ ion-content.bg-cream) .app-text {
+  color: #22374f;
+}
+
+/* Toolbar on cream pages - cream bg + dark text */
+ion-header:has(+ ion-content.bg-cream) ion-toolbar {
+  --background: #f8f2e4;
+  --color: #22374f;
+}
+
+/* App text color for dark backgrounds (splash, terminal panel, etc.) */
 .app-text {
   color: #f8f5ed;
 }

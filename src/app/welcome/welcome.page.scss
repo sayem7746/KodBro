@@ -1,6 +1,6 @@
-// Same as global .app-text for consistency
+// Dark text for readability on cream background
 .welcome-text {
-  color: #f8f5ed;
+  color: #22374f;
 }
 
 ion-button.ion-button--red {
@@ -11,8 +11,8 @@ ion-button.ion-button--red {
 }
 
 ion-button.ion-button--outline-light {
-  --border-color: #f8f5ed;
-  --color: #f8f5ed;
-  --background-hover: rgba(248, 245, 237, 0.1);
-  --background-activated: rgba(248, 245, 237, 0.15);
+  --border-color: #22374f;
+  --color: #22374f;
+  --background-hover: rgba(34, 55, 79, 0.08);
+  --background-activated: rgba(34, 55, 79, 0.12);
 }
