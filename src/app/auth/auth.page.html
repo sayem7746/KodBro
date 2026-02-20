@@ -9,27 +9,20 @@
 
 <ion-content [fullscreen]="true" class="bg-cream">
   <div class="auth-inner flex flex-col min-h-full px-6 py-8">
-    <!-- Palette strip -->
-    <div class="flex rounded-full overflow-hidden h-2 w-full max-w-xs mb-8">
-      <span class="flex-1 bg-maroon"></span>
-      <span class="flex-1 bg-red"></span>
-      <span class="flex-1 bg-cream"></span>
-      <span class="flex-1 bg-navy"></span>
-      <span class="flex-1 bg-steel"></span>
+    <div class="auth-header mb-8">
+      <h1 class="text-2xl font-bold mb-1 text-navy">Welcome back</h1>
+      <p class="text-sm opacity-90 text-steel">Enter your details to continue.</p>
     </div>
 
-    <h1 class="text-xl font-bold mb-1">Welcome back</h1>
-    <p class="text-sm mb-8 opacity-90">Enter your details to continue.</p>
-
     <form class="space-y-4" (ngSubmit)="signIn()">
-      <ion-item lines="none" class="auth-input rounded-xl bg-white/80 border border-steel/30 ion-no-padding">
+      <ion-item lines="none" class="auth-input rounded-xl ion-no-padding">
         <ion-label position="stacked" class="font-medium">Email</ion-label>
         <ion-input
           type="email"
           placeholder="you@example.com"
         ></ion-input>
       </ion-item>
-      <ion-item lines="none" class="auth-input rounded-xl bg-white/80 border border-steel/30 ion-no-padding">
+      <ion-item lines="none" class="auth-input rounded-xl ion-no-padding">
         <ion-label position="stacked" class="font-medium">Password</ion-label>
         <ion-input
           type="password"

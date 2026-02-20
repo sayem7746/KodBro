@@ -42,21 +42,21 @@
 
 /* Cream background pages - ensure background and readable text (web + iOS) */
 ion-content.bg-cream {
-  --background: #f8f2e4;
-  --color: #22374f;
-  --ion-text-color: #22374f;
+  --background: #fdf6ee;
+  --color: #2e4456;
+  --ion-text-color: #2e4456;
 }
 
 ion-content.bg-cream ion-input,
 ion-content.bg-cream ion-textarea,
 ion-content.bg-cream ion-item,
 ion-content.bg-cream ion-label {
-  --color: #22374f;
+  --color: #2e4456;
 }
 
 ion-content.bg-cream ion-input,
 ion-content.bg-cream ion-textarea {
-  --placeholder-color: rgba(34, 55, 79, 0.65);
+  --placeholder-color: rgba(46, 68, 86, 0.55);
 }
 
 /* Override Ionic dark mode: cream pages keep light inputs with dark text */
@@ -68,19 +68,19 @@ ion-content.bg-cream ion-item.auth-input {
 /* Override cream text when on cream background - navy for readability */
 ion-content.bg-cream .app-text,
 ion-header:has(+ ion-content.bg-cream) .app-text {
-  color: #22374f;
+  color: #2e4456;
 }
 
 /* Toolbar on cream pages - cream bg + dark text (override dark mode) */
 ion-header:has(+ ion-content.bg-cream) ion-toolbar {
-  --background: #f8f2e4;
-  --color: #22374f;
-  --ion-toolbar-color: #22374f;
+  --background: #fdf6ee;
+  --color: #2e4456;
+  --ion-toolbar-color: #2e4456;
 }
 
 /* Toolbar buttons on cream pages - ensure dark text for "Build with Agent", etc. */
 ion-header:has(+ ion-content.bg-cream) ion-toolbar ion-button {
-  --color: #22374f;
+  --color: #2e4456;
 }
 
 /* App text color for dark backgrounds (splash, terminal panel, etc.) */

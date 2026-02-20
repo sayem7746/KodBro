@@ -1,18 +1,18 @@
 // Dark text for readability on cream background
 .welcome-text {
-  color: #22374f;
+  color: #2e4456;
 }
 
 ion-button.ion-button--red {
-  --background: #d13e3b;
-  --background-hover: #b83533;
+  --background: #d43b35;
+  --background-hover: #bb3430;
   --background-activated: #a02f2d;
-  --color: #f8f5ed;
+  --color: #ffffff;
 }
 
 ion-button.ion-button--outline-light {
-  --border-color: #22374f;
-  --color: #22374f;
-  --background-hover: rgba(34, 55, 79, 0.08);
-  --background-activated: rgba(34, 55, 79, 0.12);
+  --border-color: #2e4456;
+  --color: #2e4456;
+  --background-hover: rgba(46, 68, 86, 0.08);
+  --background-activated: rgba(46, 68, 86, 0.12);
 }
