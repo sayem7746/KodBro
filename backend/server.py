@@ -103,7 +103,30 @@ async def api_run(req: RunCommandRequest) -> RunCommandResponse:
 
 @app.get("/api/health")
 async def health() -> dict:
-    return {"status": "ok", "service": "terminal-api"}
+    # Temporary debug output for agent endpoint troubleshooting
+    debug: dict = {}
+    try:
+        debug["gemini_api_key_set"] = bool(os.environ.get("GEMINI_API_KEY"))
+        debug["gemini_api_key_len"] = len(os.environ.get("GEMINI_API_KEY", "")) if os.environ.get("GEMINI_API_KEY") else 0
+        debug["gemini_app_model"] = os.environ.get("GEMINI_APP_MODEL", "gemini-2.0-flash")
+        try:
+            from services.agent_loop import run_agent_loop
+            debug["agent_loop_import"] = "ok"
+        except Exception as e:
+            debug["agent_loop_import"] = f"error: {type(e).__name__}: {str(e)}"
+        try:
+            from google import genai
+            debug["google_genai_import"] = "ok"
+        except Exception as e:
+            debug["google_genai_import"] = f"error: {type(e).__name__}: {str(e)}"
+        try:
+            from agent_session_store import create_session, get_project_dir
+            debug["session_store_import"] = "ok"
+        except Exception as e:
+            debug["session_store_import"] = f"error: {type(e).__name__}: {str(e)}"
+    except Exception as e:
+        debug["debug_error"] = f"{type(e).__name__}: {str(e)}"
+    return {"status": "ok", "service": "terminal-api", "debug": debug}
 
 
 # ----- App creation API -----

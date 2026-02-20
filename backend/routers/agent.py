@@ -8,6 +8,12 @@ import shutil
 from fastapi import APIRouter, HTTPException
 
 from agent_session_store import create_session, get_session, get_project_dir, append_messages, delete_session
+
+# Import for 429 rate limit error handling
+try:
+    from google.genai.errors import ClientError
+except ImportError:
+    ClientError = None
 from models import (
     CreateSessionRequest,
     CreateSessionResponse,
@@ -49,11 +55,19 @@ async def create_agent_session(req: CreateSessionRequest = CreateSessionRequest(
         if not project_dir:
             raise HTTPException(status_code=500, detail="Session has no project dir")
         append_messages(session_id, "user", req.initial_message.strip())
-        reply_text, tool_summary = await asyncio.to_thread(
-            run_agent_loop,
-            project_dir,
-            [{"role": "user", "content": req.initial_message.strip()}],
-        )
+        try:
+            reply_text, tool_summary = await asyncio.to_thread(
+                run_agent_loop,
+                project_dir,
+                [{"role": "user", "content": req.initial_message.strip()}],
+            )
+        except Exception as e:
+            if ClientError and isinstance(e, ClientError) and "429" in str(e):
+                raise HTTPException(
+                    status_code=503,
+                    detail="AI service is temporarily rate-limited. Please try again in a minute.",
+                ) from e
+            raise
         append_messages(session_id, "assistant", reply_text)
         reply = reply_text
         s = get_session(session_id)
@@ -76,11 +90,19 @@ async def send_message(session_id: str, req: SendMessageRequest):
     append_messages(session_id, "user", req.message)
     messages = session.messages
 
-    reply_text, tool_summary = await asyncio.to_thread(
-        run_agent_loop,
-        session.project_dir,
-        messages,
-    )
+    try:
+        reply_text, tool_summary = await asyncio.to_thread(
+            run_agent_loop,
+            session.project_dir,
+            messages,
+        )
+    except Exception as e:
+        if ClientError and isinstance(e, ClientError) and "429" in str(e):
+            raise HTTPException(
+                status_code=503,
+                detail="AI service is temporarily rate-limited. Please try again in a minute.",
+            ) from e
+        raise
     append_messages(session_id, "assistant", reply_text)
 
     return SendMessageResponse(reply=reply_text, tool_summary=tool_summary)

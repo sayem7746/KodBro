@@ -12,7 +12,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   @ViewChild('outputEl') outputEl!: ElementRef<HTMLDivElement>;
 
   commandInput = '';
-  serverUrl = 'https://api.kodbro.com';
+  serverUrl = 'https://agent.kodbro.com';
   private shouldScroll = false;
 
   constructor(

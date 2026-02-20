@@ -30,7 +30,7 @@ export class TerminalService {
   private commandHistory: string[] = [];
   private historyIndex = -1;
   private ws: WebSocket | null = null;
-  private _serverUrl = 'https://api.kodbro.com';
+  private _serverUrl = 'https://agent.kodbro.com';
   private _connected = false;
   private _isRemoteApi = false;
   private outputBuffer = '';
@@ -54,7 +54,7 @@ export class TerminalService {
   }
 
   set serverUrl(url: string) {
-    this._serverUrl = (url || '').trim() || 'https://api.kodbro.com';
+    this._serverUrl = (url || '').trim() || 'https://agent.kodbro.com';
   }
 
   private isHttpUrl(url: string): boolean {

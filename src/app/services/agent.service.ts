@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-const DEFAULT_API_BASE = 'https://api.kodbro.com';
+const DEFAULT_API_BASE = 'https://agent.kodbro.com';
 
 export interface GitConnection {
   provider: string;

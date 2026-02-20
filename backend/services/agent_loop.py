@@ -196,7 +196,17 @@ def run_agent_loop(
     from google import genai
     from google.genai import types
 
-    client = genai.Client(api_key=api_key)
+    # Retry on 429 RESOURCE_EXHAUSTED with exponential backoff
+    http_options = types.HttpOptions(
+        retry_options=types.HttpRetryOptions(
+            attempts=5,
+            initial_delay=2.0,
+            max_delay=60.0,
+            exp_base=2.0,
+            http_status_codes=[429, 503],  # Rate limit and service unavailable
+        )
+    )
+    client = genai.Client(api_key=api_key, http_options=http_options)
     tools = types.Tool(function_declarations=_get_tool_declarations())
 
     # Convert messages to Content format
