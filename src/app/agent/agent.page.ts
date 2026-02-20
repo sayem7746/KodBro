@@ -5,6 +5,7 @@ import {
   CreateSessionResponse,
   AgentDeployRequest,
   AgentDeployResponse,
+  AgentGitConfig,
 } from '../services/agent.service';
 
 interface ChatMessage {
@@ -29,6 +30,12 @@ export class AgentPage implements OnInit {
   // Start form (before session exists)
   initialPrompt = '';
   starting = false;
+
+  // GitHub connection (optional, for Cursor agent - create repos in user's account)
+  showGitConnect = false;
+  agentGitToken = '';
+  agentRepoName = 'my-app';
+  agentGitCreateNew = true;
 
   // Chat input
   chatInput = '';
@@ -67,7 +74,15 @@ export class AgentPage implements OnInit {
     }
     this.starting = true;
     try {
-      const res: CreateSessionResponse = await this.agent.createSession(msg);
+      const git: AgentGitConfig | undefined =
+        this.agentGitToken?.trim()
+          ? {
+              token: this.agentGitToken.trim(),
+              repo_name: this.agentRepoName?.trim() || undefined,
+              create_new: this.agentGitCreateNew,
+            }
+          : undefined;
+      const res: CreateSessionResponse = await this.agent.createSession(msg, git);
       this.sessionId = res.session_id;
       this.messages.push({ role: 'user', content: msg });
       if (res.reply) {
@@ -91,7 +106,15 @@ export class AgentPage implements OnInit {
     this.loading = true;
 
     try {
-      const res = await this.agent.sendMessage(this.sessionId, msg);
+      const git: AgentGitConfig | undefined =
+        this.agentGitToken?.trim()
+          ? {
+              token: this.agentGitToken.trim(),
+              repo_name: this.agentRepoName?.trim() || undefined,
+              create_new: this.agentGitCreateNew,
+            }
+          : undefined;
+      const res = await this.agent.sendMessage(this.sessionId, msg, git);
       this.messages.push({
         role: 'assistant',
         content: res.reply,

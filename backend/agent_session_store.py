@@ -17,6 +17,10 @@ class AgentSession:
     session_id: str
     project_dir: str
     messages: list[dict] = field(default_factory=list)
+    cursor_agent_id: Optional[str] = None
+    cursor_repo_url: Optional[str] = None
+    user_git_token: Optional[str] = None
+    user_repo_name: Optional[str] = None
 
 
 _store: dict[str, AgentSession] = {}
@@ -51,6 +55,26 @@ def append_messages(session_id: str, role: str, content: Union[str, list]) -> No
     if not s:
         raise KeyError(f"Session {session_id} not found")
     s.messages.append({"role": role, "content": content})
+
+
+def set_cursor_agent(session_id: str, agent_id: str, repo_url: str) -> None:
+    """Store Cursor agent id and repo URL for follow-ups."""
+    s = _store.get(session_id)
+    if not s:
+        raise KeyError(f"Session {session_id} not found")
+    s.cursor_agent_id = agent_id
+    s.cursor_repo_url = repo_url
+
+
+def set_user_git(session_id: str, token: Optional[str] = None, repo_name: Optional[str] = None) -> None:
+    """Store user's GitHub token and repo name for Cursor agent."""
+    s = _store.get(session_id)
+    if not s:
+        raise KeyError(f"Session {session_id} not found")
+    if token is not None:
+        s.user_git_token = token
+    if repo_name is not None:
+        s.user_repo_name = repo_name
 
 
 def delete_session(session_id: str) -> None:

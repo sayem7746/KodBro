@@ -7,9 +7,17 @@ import shutil
 
 from fastapi import APIRouter, HTTPException
 
-from agent_session_store import create_session, get_session, get_project_dir, append_messages, delete_session
+from agent_session_store import (
+    create_session,
+    get_session,
+    get_project_dir,
+    append_messages,
+    delete_session,
+    set_cursor_agent,
+    set_user_git,
+)
 
-# Import for 429 rate limit error handling
+# Import for 429 rate limit error handling (Gemini)
 try:
     from google.genai.errors import ClientError
 except ImportError:
@@ -24,9 +32,7 @@ from models import (
     FileEntry,
     FilesResponse,
 )
-from services.agent_loop import run_agent_loop
-from services.agent_loop import read_file as tool_read_file
-from services.agent_loop import list_dir as tool_list_dir
+from services.agent_loop import run_agent, read_file as tool_read_file, list_dir as tool_list_dir
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
@@ -54,12 +60,26 @@ async def create_agent_session(req: CreateSessionRequest = CreateSessionRequest(
         project_dir = get_project_dir(session_id)
         if not project_dir:
             raise HTTPException(status_code=500, detail="Session has no project dir")
+        if req.git and req.git.token:
+            set_user_git(session_id, token=req.git.token, repo_name=req.git.repo_name)
         append_messages(session_id, "user", req.initial_message.strip())
         try:
+            def get_state():
+                s = get_session(session_id)
+                return (s.cursor_agent_id, s.cursor_repo_url) if s else (None, None)
+
+            def get_user_git_state():
+                s = get_session(session_id)
+                return (s.user_git_token, s.user_repo_name) if s else (None, None)
+
             reply_text, tool_summary = await asyncio.to_thread(
-                run_agent_loop,
+                run_agent,
                 project_dir,
                 [{"role": "user", "content": req.initial_message.strip()}],
+                session_id,
+                get_cursor_state=get_state,
+                set_cursor_state=lambda aid, url: set_cursor_agent(session_id, aid, url),
+                get_user_git=get_user_git_state,
             )
         except Exception as e:
             if ClientError and isinstance(e, ClientError) and "429" in str(e):
@@ -67,6 +87,8 @@ async def create_agent_session(req: CreateSessionRequest = CreateSessionRequest(
                     status_code=503,
                     detail="AI service is temporarily rate-limited. Please try again in a minute.",
                 ) from e
+            if isinstance(e, (TimeoutError, RuntimeError)) and ("rate limit" in str(e).lower() or "429" in str(e)):
+                raise HTTPException(status_code=503, detail=str(e)) from e
             raise
         append_messages(session_id, "assistant", reply_text)
         reply = reply_text
@@ -87,14 +109,28 @@ async def send_message(session_id: str, req: SendMessageRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    if req.git and req.git.token:
+        set_user_git(session_id, token=req.git.token, repo_name=req.git.repo_name)
     append_messages(session_id, "user", req.message)
     messages = session.messages
 
     try:
+        def get_state():
+            s = get_session(session_id)
+            return (s.cursor_agent_id, s.cursor_repo_url) if s else (None, None)
+
+        def get_user_git_state():
+            s = get_session(session_id)
+            return (s.user_git_token, s.user_repo_name) if s else (None, None)
+
         reply_text, tool_summary = await asyncio.to_thread(
-            run_agent_loop,
+            run_agent,
             session.project_dir,
             messages,
+            session_id,
+            get_cursor_state=get_state,
+            set_cursor_state=lambda aid, url: set_cursor_agent(session_id, aid, url),
+            get_user_git=get_user_git_state,
         )
     except Exception as e:
         if ClientError and isinstance(e, ClientError) and "429" in str(e):
@@ -102,6 +138,8 @@ async def send_message(session_id: str, req: SendMessageRequest):
                 status_code=503,
                 detail="AI service is temporarily rate-limited. Please try again in a minute.",
             ) from e
+        if isinstance(e, (TimeoutError, RuntimeError)) and ("rate limit" in str(e).lower() or "429" in str(e)):
+            raise HTTPException(status_code=503, detail=str(e)) from e
         raise
     append_messages(session_id, "assistant", reply_text)
 

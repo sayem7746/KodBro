@@ -64,8 +64,16 @@ class AppStatusResponse(BaseModel):
 # ----- Agent API models -----
 
 
+class AgentGitConfig(BaseModel):
+    """Optional GitHub connection for Cursor agent (create repos in user's account)."""
+    token: Optional[str] = Field(None, description="GitHub personal access token")
+    repo_name: Optional[str] = Field(None, max_length=100, description="Repository name when creating new")
+    create_new: bool = Field(True, description="Create new repository (vs use existing repo_url)")
+
+
 class CreateSessionRequest(BaseModel):
     initial_message: Optional[str] = Field(None, max_length=10000)
+    git: Optional[AgentGitConfig] = Field(None, description="Connect your GitHub to create repos in your account")
 
 
 class CreateSessionResponse(BaseModel):
@@ -76,6 +84,7 @@ class CreateSessionResponse(BaseModel):
 
 class SendMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=10000)
+    git: Optional[AgentGitConfig] = Field(None, description="GitHub connection (if not set at session start)")
 
 
 class SendMessageResponse(BaseModel):

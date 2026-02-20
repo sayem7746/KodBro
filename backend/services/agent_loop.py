@@ -1,12 +1,17 @@
 """
-Agent loop with Gemini function calling.
-Tools: read_file, write_file, list_dir, run_command.
+Agent loop: Gemini (function calling) or Cursor Cloud API.
+When CURSOR_API_KEY is set, uses Cursor. Otherwise uses Gemini.
 """
 import os
 import subprocess
 from typing import Any, Optional
 
 GEMINI_MODEL = os.environ.get("GEMINI_APP_MODEL", "gemini-2.0-flash")
+
+
+def use_cursor_api() -> bool:
+    """True if Cursor API is configured (CURSOR_API_KEY set). GitHub token can come from env or user."""
+    return bool(os.environ.get("CURSOR_API_KEY"))
 COMMAND_TIMEOUT = 120
 
 # Paths must be relative, no .., no leading /
@@ -266,3 +271,32 @@ def run_agent_loop(
         contents.append(types.Content(role="user", parts=user_parts))
 
     return "Reached maximum tool rounds. Please try a simpler request.", tool_summary
+
+
+def run_agent(
+    project_dir: str,
+    messages: list[dict],
+    session_id: str,
+    get_cursor_state,
+    set_cursor_state,
+    get_user_git=None,
+    api_key: Optional[str] = None,
+) -> tuple[str, list[str]]:
+    """
+    Run agent: uses Cursor API if configured, else Gemini.
+    get_cursor_state: () -> (agent_id, repo_url)
+    set_cursor_state: (agent_id, repo_url) -> None
+    get_user_git: () -> (token, repo_name) for user's GitHub connection
+    """
+    if use_cursor_api():
+        from services.cursor_agent import run_cursor_agent
+        return run_cursor_agent(
+            project_dir,
+            messages,
+            session_id,
+            get_cursor_state=get_cursor_state,
+            set_cursor_state=set_cursor_state,
+            get_user_git=get_user_git,
+            api_key=api_key or os.environ.get("CURSOR_API_KEY"),
+        )
+    return run_agent_loop(project_dir, messages, api_key)

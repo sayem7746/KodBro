@@ -22,6 +22,46 @@
             rows="4"
           ></ion-textarea>
         </ion-item>
+
+        <!-- Connect GitHub (optional - create repos in your account) -->
+        <div class="git-connect-section">
+          <ion-item lines="none" button (click)="showGitConnect = !showGitConnect" class="cursor-pointer">
+            <ion-icon [name]="showGitConnect ? 'chevron-down' : 'chevron-forward'" slot="start"></ion-icon>
+            <ion-label>Connect GitHub (optional)</ion-label>
+          </ion-item>
+          @if (showGitConnect) {
+            <div class="pl-6 pr-4 pb-3 space-y-2">
+              <p class="text-sm text-navy/70">Create repositories in your account. Required when using Cursor agent.</p>
+              <ion-item lines="none">
+                <ion-input
+                  label="Personal access token"
+                  labelPlacement="stacked"
+                  type="password"
+                  [(ngModel)]="agentGitToken"
+                  name="agentGitToken"
+                  placeholder="ghp_..."
+                ></ion-input>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-checkbox [(ngModel)]="agentGitCreateNew" name="agentGitCreateNew" labelPlacement="end">
+                  Create new repository
+                </ion-checkbox>
+              </ion-item>
+              @if (agentGitCreateNew) {
+                <ion-item lines="none">
+                  <ion-input
+                    label="Repository name"
+                    labelPlacement="stacked"
+                    [(ngModel)]="agentRepoName"
+                    name="agentRepoName"
+                    placeholder="my-todo-app"
+                  ></ion-input>
+                </ion-item>
+              }
+            </div>
+          }
+        </div>
+
         @if (error) {
           <ion-note color="danger" class="block px-2">{{ error }}</ion-note>
         }
@@ -66,6 +106,42 @@
         @if (error) {
           <ion-note color="danger" class="block px-3 py-2">{{ error }}</ion-note>
         }
+
+        <!-- Connect GitHub (when in session - for Cursor agent) -->
+        <div class="px-3 py-1 border-t border-navy/10">
+          <ion-item lines="none" button (click)="showGitConnect = !showGitConnect" class="cursor-pointer min-h-[36px]">
+            <ion-icon [name]="showGitConnect ? 'chevron-down' : 'chevron-forward'" slot="start" class="text-navy/70"></ion-icon>
+            <ion-label class="text-sm">Connect GitHub</ion-label>
+          </ion-item>
+          @if (showGitConnect) {
+            <div class="pl-4 pr-2 pb-2 space-y-2">
+              <ion-item lines="none" class="min-h-0">
+                <ion-input
+                  label="Personal access token"
+                  labelPlacement="stacked"
+                  type="password"
+                  [(ngModel)]="agentGitToken"
+                  placeholder="ghp_..."
+                  class="text-sm"
+                ></ion-input>
+              </ion-item>
+              <ion-item lines="none" class="min-h-0">
+                <ion-checkbox [(ngModel)]="agentGitCreateNew" labelPlacement="end">Create new repository</ion-checkbox>
+              </ion-item>
+              @if (agentGitCreateNew) {
+                <ion-item lines="none" class="min-h-0">
+                  <ion-input
+                    label="Repository name"
+                    labelPlacement="stacked"
+                    [(ngModel)]="agentRepoName"
+                    placeholder="my-todo-app"
+                    class="text-sm"
+                  ></ion-input>
+                </ion-item>
+              }
+            </div>
+          }
+        </div>
 
         <div class="chat-input p-3 border-t border-navy/10 flex gap-2">
           <ion-textarea

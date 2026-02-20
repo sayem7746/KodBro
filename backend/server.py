@@ -107,11 +107,14 @@ async def health() -> dict:
     debug: dict = {}
     try:
         debug["gemini_api_key_set"] = bool(os.environ.get("GEMINI_API_KEY"))
-        debug["gemini_api_key_len"] = len(os.environ.get("GEMINI_API_KEY", "")) if os.environ.get("GEMINI_API_KEY") else 0
-        debug["gemini_app_model"] = os.environ.get("GEMINI_APP_MODEL", "gemini-2.0-flash")
+        debug["cursor_api_key_set"] = bool(os.environ.get("CURSOR_API_KEY"))
+        debug["cursor_github_token_set"] = bool(
+            os.environ.get("CURSOR_GITHUB_TOKEN") or os.environ.get("AGENT_GITHUB_TOKEN")
+        )
         try:
-            from services.agent_loop import run_agent_loop
+            from services.agent_loop import run_agent, use_cursor_api
             debug["agent_loop_import"] = "ok"
+            debug["agent_backend"] = "cursor" if use_cursor_api() else "gemini"
         except Exception as e:
             debug["agent_loop_import"] = f"error: {type(e).__name__}: {str(e)}"
         try:

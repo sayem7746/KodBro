@@ -15,10 +15,26 @@ export interface VercelConnection {
   project_name?: string;
 }
 
+export interface AgentGitConfig {
+  token?: string;
+  repo_name?: string;
+  create_new?: boolean;
+}
+
+export interface CreateSessionRequest {
+  initial_message?: string;
+  git?: AgentGitConfig;
+}
+
 export interface CreateSessionResponse {
   session_id: string;
   reply?: string;
   message_history?: Array<{ role: string; content: string }>;
+}
+
+export interface SendMessageRequest {
+  message: string;
+  git?: AgentGitConfig;
 }
 
 export interface SendMessageResponse {
@@ -50,11 +66,22 @@ export class AgentService {
     return this.apiBase;
   }
 
-  async createSession(initialMessage?: string): Promise<CreateSessionResponse> {
+  async createSession(
+    initialMessage?: string,
+    git?: AgentGitConfig,
+  ): Promise<CreateSessionResponse> {
+    const body: CreateSessionRequest = { initial_message: initialMessage || null };
+    if (git?.token) {
+      body.git = {
+        token: git.token,
+        repo_name: git.repo_name,
+        create_new: git.create_new ?? true,
+      };
+    }
     const res = await fetch(`${this.apiBase}/api/agent/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initial_message: initialMessage || null }),
+      body: JSON.stringify(body),
     });
     const data = (await res.json().catch(() => ({}))) as CreateSessionResponse & { detail?: string };
     if (!res.ok) {
@@ -63,11 +90,23 @@ export class AgentService {
     return data;
   }
 
-  async sendMessage(sessionId: string, message: string): Promise<SendMessageResponse> {
+  async sendMessage(
+    sessionId: string,
+    message: string,
+    git?: AgentGitConfig,
+  ): Promise<SendMessageResponse> {
+    const body: SendMessageRequest = { message };
+    if (git?.token) {
+      body.git = {
+        token: git.token,
+        repo_name: git.repo_name,
+        create_new: git.create_new ?? true,
+      };
+    }
     const res = await fetch(`${this.apiBase}/api/agent/sessions/${sessionId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
     });
     const data = (await res.json().catch(() => ({}))) as SendMessageResponse & { detail?: string };
     if (!res.ok) {

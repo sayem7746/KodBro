@@ -16,14 +16,17 @@ pip install -r requirements.txt
 
 ## Run
 
-**App creation (Gemini)** requires `GEMINI_API_KEY`. Set it before starting:
+**App creation** and **Build with Agent** require an AI backend. Choose one:
+
+- **Gemini** (default): Set `GEMINI_API_KEY` (get one at https://aistudio.google.com/apikey)
+- **Cursor API**: Set `CURSOR_API_KEY` and `CURSOR_GITHUB_TOKEN` (or `AGENT_GITHUB_TOKEN`). Get API key from Cursor Dashboard → Integrations. The GitHub token must have repo create/push access; your Cursor account must have access to those repos.
 
 ```bash
-export GEMINI_API_KEY=your_key   # get one at https://aistudio.google.com/apikey
+export GEMINI_API_KEY=your_key   # or use Cursor (see above)
 python server.py
 ```
 
-Or copy `.env.example` to `.env`, add your key there, and load it (e.g. `set -a && source .env && set +a` before `python server.py`). Never commit `.env` or your real key.
+Or copy `.env.example` to `.env`, add your keys there, and load it (e.g. `set -a && source .env && set +a` before `python server.py`). Never commit `.env` or your real keys.
 
 ```bash
 python server.py
@@ -110,7 +113,8 @@ Railway supports long-running servers, so you get the full API, WebSocket termin
 4. In the Railway dashboard → your service → **Settings** → **Networking** → **Generate Domain** to get a public URL.
 5. Set **Root Directory** to `backend` if deploying from the monorepo root (or run `railway up` from inside `backend`).
 6. Add environment variables in **Variables**:
-   - `GEMINI_API_KEY` (required for Create app and Build with Agent)
+   - `GEMINI_API_KEY` (for Create app and Build with Agent when not using Cursor)
+   - Or `CURSOR_API_KEY` + `CURSOR_GITHUB_TOKEN` (to use Cursor Cloud API instead of Gemini)
 
 Your API URL will be `https://<your-service>.railway.app`. Use it in the app for the terminal, Create app, and Build with Agent.
 
