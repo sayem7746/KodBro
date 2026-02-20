@@ -158,7 +158,8 @@ async def stream_session_logs(session_id: str, request: Request):
                     break
                 elif event.get("type") == "error":
                     yield f"event: error\ndata: {json.dumps(event)}\n\n"
-                    yield f"event: done\ndata: {json.dumps({'type': 'done', 'reply': f\"Error: {event.get('error', 'Unknown')}\", 'tool_summary': []})}\n\n"
+                    err_msg = event.get("error", "Unknown")
+                    yield f"event: done\ndata: {json.dumps({'type': 'done', 'reply': f'Error: {err_msg}', 'tool_summary': []})}\n\n"
                     break
         finally:
             cleanup_log_queue(session_id)
