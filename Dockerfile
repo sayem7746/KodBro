@@ -13,4 +13,4 @@ COPY backend/ .
 ENV PORT=8765
 EXPOSE 8765
 
-CMD ["/bin/sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["/bin/sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8765}"]
