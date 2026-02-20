@@ -4,7 +4,7 @@ When CURSOR_API_KEY is set, uses Cursor. Otherwise uses Gemini.
 """
 import os
 import subprocess
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 GEMINI_MODEL = os.environ.get("GEMINI_APP_MODEL", "gemini-2.0-flash")
 
@@ -189,14 +189,22 @@ def run_agent_loop(
     messages: list[dict],
     api_key: Optional[str] = None,
     max_tool_rounds: int = 15,
+    on_log: Optional[Callable[[str], None]] = None,
 ) -> tuple[str, list[str]]:
     """
     Run the agent loop: send messages to Gemini, execute tool calls, repeat until done.
     Returns (final_reply_text, tool_summary_list).
+    on_log: optional callback for progress logging (message: str).
     """
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY not set")
+
+    def log(msg: str) -> None:
+        if on_log:
+            on_log(msg)
+
+    log("Starting Gemini agent...")
 
     from google import genai
     from google.genai import types
@@ -254,6 +262,7 @@ def run_agent_loop(
         function_calls = response.function_calls if hasattr(response, "function_calls") else None
         if not function_calls:
             text = response.text if hasattr(response, "text") else ""
+            log("Agent finished.")
             return (text or "Done.").strip(), tool_summary
 
         # Add model response (with function calls) to contents
@@ -264,10 +273,15 @@ def run_agent_loop(
         for fc in function_calls:
             name = fc.name or ""
             args = fc.args or {}
+            args_str = ", ".join(f"{k}={repr(v)[:50]}" for k, v in args.items())
+            log(f"Tool: {name}({args_str})")
             result = _execute_tool(project_dir, name, args)
-            tool_summary.append(f"{name}({', '.join(f'{k}={repr(v)[:50]}' for k, v in args.items())}) -> {str(result)[:80]}")
+            result_preview = str(result)[:80]
+            log(f"Result: {result_preview}")
+            tool_summary.append(f"{name}({args_str}) -> {result_preview}")
             user_parts.append(types.Part.from_function_response(name=name, response=result))
 
+        log(f"Round {rounds}/{max_tool_rounds}")
         contents.append(types.Content(role="user", parts=user_parts))
 
     return "Reached maximum tool rounds. Please try a simpler request.", tool_summary
@@ -281,22 +295,35 @@ def run_agent(
     set_cursor_state,
     get_user_git=None,
     api_key: Optional[str] = None,
+    on_log: Optional[Callable[[str], None]] = None,
 ) -> tuple[str, list[str]]:
     """
-    Run agent: uses Cursor API if configured, else Gemini.
+    Run agent: uses Cursor API if configured (and GitHub token available), else Gemini.
     get_cursor_state: () -> (agent_id, repo_url)
     set_cursor_state: (agent_id, repo_url) -> None
     get_user_git: () -> (token, repo_name) for user's GitHub connection
+    on_log: optional callback for progress logging.
     """
     if use_cursor_api():
-        from services.cursor_agent import run_cursor_agent
-        return run_cursor_agent(
-            project_dir,
-            messages,
-            session_id,
-            get_cursor_state=get_cursor_state,
-            set_cursor_state=set_cursor_state,
-            get_user_git=get_user_git,
-            api_key=api_key or os.environ.get("CURSOR_API_KEY"),
+        # Cursor API requires GitHub token to create repos; fall back to Gemini if missing
+        user_token, _ = get_user_git() if get_user_git else (None, None)
+        github_token = (
+            user_token
+            or os.environ.get("CURSOR_GITHUB_TOKEN")
+            or os.environ.get("AGENT_GITHUB_TOKEN")
         )
-    return run_agent_loop(project_dir, messages, api_key)
+        if github_token:
+            from services.cursor_agent import run_cursor_agent
+            return run_cursor_agent(
+                project_dir,
+                messages,
+                session_id,
+                get_cursor_state=get_cursor_state,
+                set_cursor_state=set_cursor_state,
+                get_user_git=get_user_git,
+                github_token=github_token,
+                api_key=api_key or os.environ.get("CURSOR_API_KEY"),
+                on_log=on_log,
+            )
+        # No GitHub token: use Gemini instead of failing
+    return run_agent_loop(project_dir, messages, api_key, on_log=on_log)

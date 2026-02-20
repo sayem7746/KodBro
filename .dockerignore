@@ -1,0 +1,27 @@
+# Ignore frontend (backend is deployed separately)
+src/
+www/
+node_modules/
+ios/
+android/
+*.ts
+*.tsx
+*.html
+*.scss
+*.css
+angular.json
+package.json
+package-lock.json
+tsconfig*.json
+tailwind.config.js
+postcss.config.js
+
+# Git and IDE
+.git/
+.gitignore
+.cursor/
+*.md
+!backend/README.md
+
+# Backend: keep only what we need
+# (backend/ is copied explicitly in Dockerfile)

@@ -2,11 +2,22 @@
 Agent API: sessions, messages, files, deploy.
 """
 import asyncio
+import json
+import queue
 import re
 import shutil
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
+from agent_log_store import (
+    create_log_queue,
+    emit_done,
+    emit_error,
+    emit_log,
+    get_log_queue,
+    cleanup_log_queue,
+)
 from agent_session_store import (
     create_session,
     get_session,
@@ -49,9 +60,51 @@ def _push_url(repo_url: str, token: str) -> str:
     return normalized.replace("https://github.com/", f"https://x-access-token:{token}@github.com/")
 
 
+async def _run_agent_background(session_id: str, initial_message: str) -> None:
+    """Background task: run agent with log streaming, emit_done, append assistant reply."""
+    project_dir = get_project_dir(session_id)
+    if not project_dir:
+        emit_error(session_id, "Session has no project dir")
+        return
+    try:
+        def on_log(msg: str) -> None:
+            emit_log(session_id, msg)
+
+        def get_state():
+            s = get_session(session_id)
+            return (s.cursor_agent_id, s.cursor_repo_url) if s else (None, None)
+
+        def get_user_git_state():
+            s = get_session(session_id)
+            return (s.user_git_token, s.user_repo_name) if s else (None, None)
+
+        reply_text, tool_summary = await asyncio.to_thread(
+            run_agent,
+            project_dir,
+            [{"role": "user", "content": initial_message}],
+            session_id,
+            get_cursor_state=get_state,
+            set_cursor_state=lambda aid, url: set_cursor_agent(session_id, aid, url),
+            get_user_git=get_user_git_state,
+            on_log=on_log,
+        )
+        emit_done(session_id, reply_text, tool_summary)
+        append_messages(session_id, "assistant", reply_text)
+    except Exception as e:
+        err_msg = str(e)
+        if ClientError and isinstance(e, ClientError) and "429" in str(e):
+            err_msg = "AI service is temporarily rate-limited. Please try again in a minute."
+        elif isinstance(e, (TimeoutError, RuntimeError)) and ("rate limit" in str(e).lower() or "429" in str(e)):
+            err_msg = str(e)
+        emit_error(session_id, err_msg)
+        emit_done(session_id, f"Error: {err_msg}", [])
+
+
 @router.post("/sessions", response_model=CreateSessionResponse)
 async def create_agent_session(req: CreateSessionRequest = CreateSessionRequest()):
-    """Create a new agent session. Optionally send initial_message to get first reply."""
+    """Create a new agent session. Optionally send initial_message to get first reply.
+    When initial_message is present, returns session_id immediately and runs agent in background.
+    Connect to GET /sessions/{session_id}/stream for real-time logs."""
     session_id = create_session()
     reply = None
     history = None
@@ -63,42 +116,61 @@ async def create_agent_session(req: CreateSessionRequest = CreateSessionRequest(
         if req.git and req.git.token:
             set_user_git(session_id, token=req.git.token, repo_name=req.git.repo_name)
         append_messages(session_id, "user", req.initial_message.strip())
-        try:
-            def get_state():
-                s = get_session(session_id)
-                return (s.cursor_agent_id, s.cursor_repo_url) if s else (None, None)
 
-            def get_user_git_state():
-                s = get_session(session_id)
-                return (s.user_git_token, s.user_repo_name) if s else (None, None)
-
-            reply_text, tool_summary = await asyncio.to_thread(
-                run_agent,
-                project_dir,
-                [{"role": "user", "content": req.initial_message.strip()}],
-                session_id,
-                get_cursor_state=get_state,
-                set_cursor_state=lambda aid, url: set_cursor_agent(session_id, aid, url),
-                get_user_git=get_user_git_state,
-            )
-        except Exception as e:
-            if ClientError and isinstance(e, ClientError) and "429" in str(e):
-                raise HTTPException(
-                    status_code=503,
-                    detail="AI service is temporarily rate-limited. Please try again in a minute.",
-                ) from e
-            if isinstance(e, (TimeoutError, RuntimeError)) and ("rate limit" in str(e).lower() or "429" in str(e)):
-                raise HTTPException(status_code=503, detail=str(e)) from e
-            raise
-        append_messages(session_id, "assistant", reply_text)
-        reply = reply_text
-        s = get_session(session_id)
-        history = s.messages if s else None
+        create_log_queue(session_id)
+        asyncio.create_task(_run_agent_background(session_id, req.initial_message.strip()))
+        return CreateSessionResponse(session_id=session_id, reply=None, message_history=None)
 
     return CreateSessionResponse(
         session_id=session_id,
         reply=reply,
         message_history=history,
+    )
+
+
+@router.get("/sessions/{session_id}/stream")
+async def stream_session_logs(session_id: str, request: Request):
+    """SSE stream of agent logs. Connect when session is created with initial_message."""
+    if not get_session(session_id):
+        raise HTTPException(status_code=404, detail="Session not found")
+    q = get_log_queue(session_id)
+    if not q:
+        raise HTTPException(status_code=404, detail="No log stream for this session")
+
+    STREAM_TIMEOUT = 300  # 5 minutes without event
+
+    async def event_generator():
+        try:
+            while True:
+                try:
+                    event = await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: q.get(timeout=30)
+                    )
+                except queue.Empty:
+                    yield ": keepalive\n\n"
+                    continue
+                except Exception:
+                    break
+                if event.get("type") == "log":
+                    yield f"event: log\ndata: {json.dumps(event)}\n\n"
+                elif event.get("type") == "done":
+                    yield f"event: done\ndata: {json.dumps(event)}\n\n"
+                    break
+                elif event.get("type") == "error":
+                    yield f"event: error\ndata: {json.dumps(event)}\n\n"
+                    yield f"event: done\ndata: {json.dumps({'type': 'done', 'reply': f\"Error: {event.get('error', 'Unknown')}\", 'tool_summary': []})}\n\n"
+                    break
+        finally:
+            cleanup_log_queue(session_id)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

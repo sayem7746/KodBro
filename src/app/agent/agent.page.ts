@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import {
   AgentService,
   CreateSessionResponse,
@@ -20,12 +21,17 @@ interface ChatMessage {
   styleUrls: ['./agent.page.scss'],
   standalone: false,
 })
-export class AgentPage implements OnInit {
+export class AgentPage implements OnInit, OnDestroy {
   // Session state
   sessionId: string | null = null;
   messages: ChatMessage[] = [];
   loading = false;
   error: string | null = null;
+
+  // Real-time build logs (streamed from backend)
+  logs: string[] = [];
+  showLogPanel = true;
+  streamSubscription: Subscription | null = null;
 
   // Start form (before session exists)
   initialPrompt = '';
@@ -65,6 +71,10 @@ export class AgentPage implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+    this.streamSubscription?.unsubscribe();
+  }
+
   async startSession(): Promise<void> {
     this.error = null;
     const msg = this.initialPrompt?.trim();
@@ -73,6 +83,7 @@ export class AgentPage implements OnInit {
       return;
     }
     this.starting = true;
+    this.logs = [];
     try {
       const git: AgentGitConfig | undefined =
         this.agentGitToken?.trim()
@@ -85,10 +96,36 @@ export class AgentPage implements OnInit {
       const res: CreateSessionResponse = await this.agent.createSession(msg, git);
       this.sessionId = res.session_id;
       this.messages.push({ role: 'user', content: msg });
+      this.initialPrompt = '';
+
       if (res.reply) {
         this.messages.push({ role: 'assistant', content: res.reply });
+      } else {
+        this.loading = true;
+        this.streamSubscription = this.agent.streamSessionLogs(res.session_id).subscribe({
+          next: (ev) => {
+            if (ev.type === 'log') {
+              this.logs = [...this.logs, ev.message];
+            } else if (ev.type === 'done') {
+              this.messages.push({
+                role: 'assistant',
+                content: ev.reply,
+                toolSummary: ev.tool_summary,
+              });
+              this.loading = false;
+              this.streamSubscription?.unsubscribe();
+              this.streamSubscription = null;
+            } else if (ev.type === 'error') {
+              this.error = ev.error;
+            }
+          },
+          error: (err) => {
+            this.error = err instanceof Error ? err.message : 'Stream failed';
+            this.loading = false;
+            this.streamSubscription = null;
+          },
+        });
       }
-      this.initialPrompt = '';
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to start';
     } finally {

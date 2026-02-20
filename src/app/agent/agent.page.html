@@ -70,6 +70,26 @@
         </ion-button>
       </div>
     } @else {
+      <!-- Build log panel (real-time agent activity) -->
+      @if (logs.length > 0) {
+        <div class="log-panel rounded-xl border border-navy/20 overflow-hidden">
+          <div
+            class="flex items-center justify-between px-3 py-2 bg-navy/5 border-b border-navy/10 cursor-pointer"
+            (click)="showLogPanel = !showLogPanel"
+          >
+            <span class="text-sm font-medium text-navy/90">Agent activity</span>
+            <ion-icon [name]="showLogPanel ? 'chevron-down' : 'chevron-forward'" class="text-navy/70"></ion-icon>
+          </div>
+          @if (showLogPanel) {
+            <div class="p-2 text-xs font-mono overflow-y-auto max-h-48 bg-navy/5 text-navy/90 space-y-0.5">
+              @for (log of logs; track $index) {
+                <div class="log-line whitespace-pre-wrap break-words">{{ log }}</div>
+              }
+            </div>
+          }
+        </div>
+      }
+
       <!-- Chat -->
       <div class="chat-panel flex flex-col flex-1 min-h-[300px] rounded-xl border border-navy/20 overflow-hidden">
         <div class="chat-messages flex-1 overflow-y-auto p-3 space-y-3">
