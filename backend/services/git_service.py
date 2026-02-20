@@ -32,15 +32,17 @@ def create_github_repo(token: str, name: str, description: str, private: bool = 
     """Create a GitHub repo and return public clone URL (no token). Use push_url with token for push."""
     url = "https://api.github.com/user/repos"
     payload = {"name": name, "description": description, "private": private}
+    headers = {
+        "Authorization": f"Bearer {token.strip()}",
+        "Accept": "application/vnd.github.v3+json",
+    }
     with httpx.Client(timeout=30) as client:
-        resp = client.post(
-            url,
-            json=payload,
-            headers={
-                "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json",
-            },
-        )
+        resp = client.post(url, json=payload, headers=headers)
+        if resp.status_code == 403:
+            err_body = resp.json() if resp.content else {}
+            msg = err_body.get("message", "Forbidden")
+            hint = "Check that your token has the 'repo' scope (classic) or 'Contents' + 'Metadata' write (fine-grained). Token may be expired."
+            raise RuntimeError(f"GitHub API 403: {msg}. {hint}")
         resp.raise_for_status()
         data = resp.json()
         return data.get("clone_url") or (data.get("html_url", "") + ".git")

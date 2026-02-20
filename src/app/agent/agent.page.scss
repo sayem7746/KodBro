@@ -2,6 +2,37 @@
   min-height: 100%;
 }
 
+/* GitHub connection inputs - ensure text is clearly visible on cream background */
+.git-connect-section {
+  ion-input,
+  ion-label,
+  ion-checkbox,
+  p {
+    --color: #2e4456;
+    color: #2e4456;
+  }
+
+  ion-input {
+    --placeholder-color: rgba(46, 68, 86, 0.85);
+  }
+
+  ion-checkbox::part(label) {
+    color: #2e4456;
+  }
+}
+
+/* Deploy form - same visibility for GitHub inputs */
+.deploy-form ion-input,
+.deploy-form ion-label,
+.deploy-form ion-checkbox {
+  --color: #2e4456;
+  color: #2e4456;
+}
+
+.deploy-form ion-input {
+  --placeholder-color: rgba(46, 68, 86, 0.85);
+}
+
 .agent-item {
   --background: transparent;
   --padding-start: 0;
