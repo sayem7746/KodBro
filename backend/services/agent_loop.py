@@ -325,5 +325,9 @@ def run_agent(
                 api_key=api_key or os.environ.get("CURSOR_API_KEY"),
                 on_log=on_log,
             )
-        # No GitHub token: use Gemini instead of failing
+        # No GitHub token: use Gemini, inform user they can connect GitHub for Cursor
+        def _log(msg: str) -> None:
+            if on_log:
+                on_log(msg)
+        _log("Connect your GitHub account in the app to use Cursor agent. Using Gemini for now.")
     return run_agent_loop(project_dir, messages, api_key, on_log=on_log)

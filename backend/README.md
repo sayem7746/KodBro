@@ -19,7 +19,7 @@ pip install -r requirements.txt
 **App creation** and **Build with Agent** require an AI backend. Choose one:
 
 - **Gemini** (default): Set `GEMINI_API_KEY` (get one at https://aistudio.google.com/apikey)
-- **Cursor API**: Set `CURSOR_API_KEY` and `CURSOR_GITHUB_TOKEN` (or `AGENT_GITHUB_TOKEN`). Get API key from Cursor Dashboard → Integrations. The GitHub token must have repo create/push access; your Cursor account must have access to those repos.
+- **Cursor API**: Set `CURSOR_API_KEY`. Users connect their GitHub account in the app (personal access token with repo access). Alternatively, set `CURSOR_GITHUB_TOKEN` server-side to create repos on behalf of the server. Get API key from Cursor Dashboard → Integrations.
 
 ```bash
 export GEMINI_API_KEY=your_key   # or use Cursor (see above)

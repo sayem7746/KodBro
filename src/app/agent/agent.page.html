@@ -23,15 +23,15 @@
           ></ion-textarea>
         </ion-item>
 
-        <!-- Connect GitHub (optional - create repos in your account) -->
+        <!-- Connect GitHub - required for Cursor agent -->
         <div class="git-connect-section">
           <ion-item lines="none" button (click)="showGitConnect = !showGitConnect" class="cursor-pointer">
             <ion-icon [name]="showGitConnect ? 'chevron-down' : 'chevron-forward'" slot="start"></ion-icon>
-            <ion-label>Connect GitHub (optional)</ion-label>
+            <ion-label>Connect GitHub</ion-label>
           </ion-item>
           @if (showGitConnect) {
             <div class="pl-6 pr-4 pb-3 space-y-2">
-              <p class="text-sm text-navy/70">Create repositories in your account. Required when using Cursor agent.</p>
+              <p class="text-sm text-navy/70">Connect your GitHub account to use the Cursor agent. Provide a personal access token with repo access—it's used only to create repositories in your account.</p>
               <ion-item lines="none">
                 <ion-input
                   label="Personal access token"
@@ -131,7 +131,7 @@
         <div class="px-3 py-1 border-t border-navy/10">
           <ion-item lines="none" button (click)="showGitConnect = !showGitConnect" class="cursor-pointer min-h-[36px]">
             <ion-icon [name]="showGitConnect ? 'chevron-down' : 'chevron-forward'" slot="start" class="text-navy/70"></ion-icon>
-            <ion-label class="text-sm">Connect GitHub</ion-label>
+            <ion-label class="text-sm">Connect GitHub (for Cursor agent)</ion-label>
           </ion-item>
           @if (showGitConnect) {
             <div class="pl-4 pr-2 pb-2 space-y-2">
