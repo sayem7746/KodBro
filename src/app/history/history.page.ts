@@ -8,6 +8,7 @@ interface JobItem {
   repo_url: string | null;
   deploy_url: string | null;
   created_at: string | null;
+  source?: 'agent' | 'create-app';
 }
 
 @Component({
@@ -20,6 +21,7 @@ export class HistoryPage implements OnInit {
   jobs: JobItem[] = [];
   loading = true;
   error: string | null = null;
+  deletingId: string | null = null;
 
   constructor(private auth: AuthService) {}
 
@@ -65,6 +67,30 @@ export class HistoryPage implements OnInit {
       });
     } catch {
       return iso;
+    }
+  }
+
+  async deleteJob(job: JobItem): Promise<void> {
+    if (!confirm(`Delete "${job.app_name}"? This will remove it from your list and delete the GitHub repository.`)) {
+      return;
+    }
+    this.error = null;
+    this.deletingId = job.id;
+    const source = job.source ?? 'agent';
+    try {
+      const res = await fetch(
+        `${this.auth.getApiBase()}/api/user/jobs/${encodeURIComponent(job.id)}?source=${source}`,
+        { method: 'DELETE', headers: this.headers }
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { detail?: string }).detail || res.statusText || 'Failed to delete');
+      }
+      await this.loadJobs();
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : 'Failed to delete';
+    } finally {
+      this.deletingId = null;
     }
   }
 

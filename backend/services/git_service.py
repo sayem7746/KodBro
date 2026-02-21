@@ -63,6 +63,34 @@ def _parse_repo_url(clone_url: str) -> Optional[tuple[str, str]]:
     return None
 
 
+def delete_github_repo(token: str, repo_url: str) -> tuple[bool, str]:
+    """
+    Delete a GitHub repository. Returns (success, message).
+    repo_url: https://github.com/owner/repo or https://github.com/owner/repo.git
+    """
+    parsed = _parse_repo_url(repo_url)
+    if not parsed:
+        return False, "Invalid repo URL"
+    owner, repo = parsed
+    url = f"https://api.github.com/repos/{owner}/{repo}"
+    headers = {
+        "Authorization": f"Bearer {token.strip()}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    try:
+        with httpx.Client(timeout=30) as client:
+            resp = client.delete(url, headers=headers)
+            if resp.status_code == 204:
+                return True, "Repository deleted"
+            if resp.status_code == 404:
+                return True, "Repository not found (may already be deleted)"
+            err_body = resp.json() if resp.content and resp.headers.get("content-type", "").startswith("application/json") else {}
+            msg = err_body.get("message") or err_body.get("error") or resp.text or f"HTTP {resp.status_code}"
+            return False, msg
+    except Exception as e:
+        return False, str(e)
+
+
 def verify_branch_exists(token: str, clone_url: str, branch: str = "main") -> bool:
     """Check if branch exists in repo via GitHub API. Returns True if branch exists."""
     parsed = _parse_repo_url(clone_url)

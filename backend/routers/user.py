@@ -103,6 +103,57 @@ def list_user_jobs(
     return items[:50]
 
 
+@router.delete("/jobs/{job_id}")
+def delete_user_job(
+    job_id: str,
+    source: str,
+    user_id: Annotated[UUID, Depends(get_current_user_id)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Delete an app from the user's list and its GitHub repo. source must be 'agent' or 'create-app'."""
+    from agent_session_store import delete_session
+    from database import AppJob, AgentSession
+    from services.git_service import delete_github_repo
+
+    repo_url = None
+    if source == "agent":
+        row = db.query(AgentSession).filter(
+            AgentSession.session_uuid == job_id,
+            AgentSession.user_id == user_id,
+        ).first()
+        if not row:
+            raise HTTPException(status_code=404, detail="App not found")
+        repo_url = getattr(row, "cursor_repo_url", None)
+        delete_session(job_id)  # Cleans in-memory store, project dir, and DB
+    elif source == "create-app":
+        try:
+            job_uuid = UUID(job_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid job id")
+        row = db.query(AppJob).filter(
+            AppJob.id == job_uuid,
+            AppJob.user_id == user_id,
+        ).first()
+        if not row:
+            raise HTTPException(status_code=404, detail="App not found")
+        repo_url = getattr(row, "repo_url", None)
+        db.delete(row)
+        db.commit()
+    else:
+        raise HTTPException(status_code=400, detail="source must be 'agent' or 'create-app'")
+
+    # Delete GitHub repo if we have URL and token
+    if repo_url and repo_url.strip():
+        token = get_token(db, user_id, "github")
+        if token:
+            ok, msg = delete_github_repo(token, repo_url)
+            if not ok:
+                # Still return deleted - we removed from our list; GitHub failure is non-blocking
+                return {"status": "deleted", "github_deleted": False, "github_message": msg}
+            return {"status": "deleted", "github_deleted": True}
+    return {"status": "deleted"}
+
+
 @router.put("/tokens/{provider}")
 def put_user_token(
     provider: str,

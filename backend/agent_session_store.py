@@ -147,10 +147,21 @@ def set_user_git(session_id: str, token: Optional[str] = None, repo_name: Option
 
 
 def delete_session(session_id: str) -> None:
-    """Remove session and clean up its project directory."""
+    """Remove session and clean up its project directory. Also removes from DB if present."""
     s = _store.pop(session_id, None)
     if s and s.project_dir and os.path.isdir(s.project_dir):
         try:
             shutil.rmtree(s.project_dir, ignore_errors=True)
+        except Exception:
+            pass
+    if _use_db():
+        try:
+            from database import AgentSession as AgentSessionModel, SessionLocal
+            db = SessionLocal()
+            row = db.query(AgentSessionModel).filter(AgentSessionModel.session_uuid == session_id).first()
+            if row:
+                db.delete(row)
+                db.commit()
+            db.close()
         except Exception:
             pass
