@@ -14,7 +14,7 @@ import signal
 import subprocess
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from starlette.websockets import WebSocket
@@ -82,6 +82,18 @@ def run_command(command: str, timeout_seconds: int = 30, cwd: Optional[str] = No
 
 
 app = FastAPI(title="KodBro Terminal API", version="1.0")
+
+
+@app.exception_handler(RuntimeError)
+async def runtime_error_handler(request: Request, exc: RuntimeError):
+    """Return 503 with clear message for missing config (DATABASE_URL, JWT_SECRET)."""
+    from starlette.responses import JSONResponse
+    return JSONResponse(
+        status_code=503,
+        content={"detail": str(exc)},
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

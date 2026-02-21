@@ -23,6 +23,8 @@ In your Railway service → **Variables**, add:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection URL (add Postgres plugin, use `${{Postgres.DATABASE_PRIVATE_URL}}`) | Yes (for auth) |
+| `JWT_SECRET` | Secret for JWT tokens (generate: `openssl rand -hex 32`) | Yes (for auth) |
 | `GEMINI_API_KEY` | Google Gemini API key (for agent) | Yes (or use Cursor) |
 | `CURSOR_API_KEY` | Cursor API key (optional, for Cursor agent) | No |
 | `CURSOR_GITHUB_TOKEN` | GitHub token for Cursor agent | No |
@@ -61,4 +63,5 @@ Once deployed:
 
 - **Build fails**: Ensure `backend/requirements.txt` and all Python files are committed
 - **App crashes**: Check Railway logs; verify `GEMINI_API_KEY` (or `CURSOR_API_KEY`) is set
+- **Signup/Login 500 or 503**: Add `DATABASE_URL` (Postgres plugin) and `JWT_SECRET` in Variables
 - **CORS errors**: The backend allows all origins (`allow_origins=["*"]`); if issues persist, add your frontend origin explicitly

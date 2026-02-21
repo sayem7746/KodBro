@@ -32,34 +32,48 @@ class AuthResponse(BaseModel):
 @router.post("/signup", response_model=AuthResponse)
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
     """Create a new user account."""
-    existing = db.query(User).filter(User.email == req.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    user = User(
-        email=req.email,
-        hashed_password=hash_password(req.password),
-        display_name=req.display_name,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    token = create_access_token(user.id, user.email)
-    return AuthResponse(
-        access_token=token,
-        user_id=str(user.id),
-        email=user.email,
-    )
+    try:
+        existing = db.query(User).filter(User.email == req.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        user = User(
+            email=req.email,
+            hashed_password=hash_password(req.password),
+            display_name=req.display_name,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        token = create_access_token(user.id, user.email)
+        return AuthResponse(
+            access_token=token,
+            user_id=str(user.id),
+            email=user.email,
+        )
+    except HTTPException:
+        raise
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/login", response_model=AuthResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     """Sign in and get JWT."""
-    user = db.query(User).filter(User.email == req.email).first()
-    if not user or not verify_password(req.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_access_token(user.id, user.email)
-    return AuthResponse(
-        access_token=token,
-        user_id=str(user.id),
-        email=user.email,
-    )
+    try:
+        user = db.query(User).filter(User.email == req.email).first()
+        if not user or not verify_password(req.password, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        token = create_access_token(user.id, user.email)
+        return AuthResponse(
+            access_token=token,
+            user_id=str(user.id),
+            email=user.email,
+        )
+    except HTTPException:
+        raise
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
