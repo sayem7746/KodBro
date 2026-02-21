@@ -27,13 +27,16 @@
         @for (job of jobs; track job.id) {
           <ion-item>
             <ion-label>
-              <h3>{{ job.app_name }}</h3>
-              <p class="text-sm opacity-80">{{ formatDate(job.created_at) }}</p>
+              <h3 class="font-semibold">{{ job.app_name }}</h3>
+              <p class="text-sm opacity-80 mt-0.5">{{ formatDate(job.created_at) }}</p>
               @if (job.repo_url) {
-                <p class="text-xs mt-1">
-                  <a [href]="job.repo_url" target="_blank" rel="noopener">Repo</a>
+                <p class="text-xs mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <a [href]="job.repo_url" target="_blank" rel="noopener" class="text-primary underline">
+                    {{ repoDisplayUrl(job.repo_url) }}
+                  </a>
                   @if (job.deploy_url) {
-                    · <a [href]="job.deploy_url" target="_blank" rel="noopener">Deploy</a>
+                    <span class="opacity-60">·</span>
+                    <a [href]="job.deploy_url" target="_blank" rel="noopener" class="text-primary underline">Deploy</a>
                   }
                 </p>
               }

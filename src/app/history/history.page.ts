@@ -54,6 +54,16 @@ export class HistoryPage implements OnInit {
     }
   }
 
+  repoDisplayUrl(url: string | null): string {
+    if (!url) return '';
+    try {
+      const m = url.match(/github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?\/?$/);
+      return m ? m[1] : url.replace(/^https?:\/\//, '').replace(/\.git$/, '');
+    } catch {
+      return url;
+    }
+  }
+
   formatDate(iso: string | null): string {
     if (!iso) return '-';
     try {

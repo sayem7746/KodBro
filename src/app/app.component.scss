@@ -6,7 +6,7 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background: var(--ion-background-color, #fff);
+  background: #f8fafc;
   border-top: 1px solid rgba(var(--ion-color-medium-rgb, 128, 128, 128), 0.2);
   padding-bottom: env(safe-area-inset-bottom, 0);
   padding-top: 6px;
@@ -23,7 +23,7 @@
   flex: 1;
   background: none;
   border: none;
-  color: var(--ion-color-medium);
+  color: #64748b;
   font-size: 0.6rem;
   cursor: pointer;
   text-decoration: none;
@@ -36,4 +36,8 @@
 .bottom-nav .tab-btn.tab-selected,
 .bottom-nav .tab-btn:active {
   color: var(--ion-color-primary);
+}
+
+.bottom-nav .tab-label {
+  color: inherit;
 }

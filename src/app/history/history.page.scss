@@ -1,6 +1,24 @@
 .history-inner {
+  ion-list {
+    --background: #f8fafc;
+    background: #f8fafc;
+  }
+
   ion-item {
+    --background: #f8fafc;
+    --color: #1e293b;
     --padding-start: 0;
     --inner-padding-end: 0;
+  }
+
+  ion-item::part(native) {
+    background: #f8fafc;
+  }
+
+  ion-label,
+  ion-label h3,
+  ion-label p,
+  ion-label a {
+    color: #1e293b !important;
   }
 }

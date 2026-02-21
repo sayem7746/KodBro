@@ -81,6 +81,21 @@ ion-content.bg-cream ion-item:has(ion-checkbox) {
   --background: transparent !important;
 }
 
+/* Override dark mode: ion-list and ion-item on cream pages - no black background */
+ion-content.bg-cream ion-list {
+  --background: #f8fafc !important;
+  background: #f8fafc !important;
+}
+
+ion-content.bg-cream ion-item {
+  --background: #f8fafc !important;
+  --color: #1e293b !important;
+}
+
+ion-content.bg-cream ion-item::part(native) {
+  background: #f8fafc !important;
+}
+
 ion-content.bg-cream ion-checkbox {
   --background: #ffffff !important;
   --background-checked: #1e293b !important;
@@ -116,6 +131,11 @@ ion-header:has(+ ion-content.bg-cream) ion-toolbar ion-button {
     --ion-text-color: #f8f5ed;
     --ion-toolbar-color: #f8f5ed;
   }
+}
+
+/* Keep app background light - no black in main app shell */
+ion-app {
+  --ion-background-color: #f8fafc;
 }
 
 /* Bottom nav padding - prevent content from being hidden behind fixed nav */

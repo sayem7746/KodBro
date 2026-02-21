@@ -145,7 +145,7 @@
 
   <!-- Deploy modal / form -->
   @if (showDeployForm) {
-    <div class="deploy-overlay fixed inset-0 bg-black/50 z-10 flex items-center justify-center p-4">
+    <div class="deploy-overlay fixed inset-0 bg-slate-900/20 z-10 flex items-center justify-center p-4">
       <div class="deploy-form bg-cream rounded-xl p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-semibold mb-3">Deploy to GitHub & Vercel</h3>
         <form (ngSubmit)="deploy()" class="flex flex-col gap-3">
