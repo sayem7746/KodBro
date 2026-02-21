@@ -10,7 +10,10 @@ GEMINI_MODEL = os.environ.get("GEMINI_APP_MODEL", "gemini-2.0-flash")
 
 
 def use_cursor_api() -> bool:
-    """True if Cursor API is configured (CURSOR_API_KEY set). GitHub token can come from env or user."""
+    """True if Cursor API is configured (CURSOR_API_KEY set). GitHub token can come from env or user.
+    Set FORCE_GEMINI=true to temporarily use Gemini instead of Cursor."""
+    if os.environ.get("FORCE_GEMINI", "").lower() in ("true", "1", "yes"):
+        return False
     return bool(os.environ.get("CURSOR_API_KEY"))
 COMMAND_TIMEOUT = 120
 
