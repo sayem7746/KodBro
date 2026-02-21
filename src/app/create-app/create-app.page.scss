@@ -1,28 +1,36 @@
 .create-app-inner {
   .create-app-item {
-    --background: transparent;
+    --background: transparent !important;
     --padding-start: 0;
     --inner-padding-end: 0;
   }
   .section-label {
-    --background: transparent;
+    --background: transparent !important;
     --padding-start: 0;
     margin-top: 0.5rem;
   }
+  ion-item:has(ion-checkbox) {
+    --background: transparent !important;
+  }
+  ion-checkbox {
+    --background: #ffffff !important;
+    --background-checked: #1e293b !important;
+    --border-color: rgba(30, 41, 59, 0.25) !important;
+  }
   ion-input,
   ion-textarea {
-    --background: rgba(34, 55, 79, 0.06);
+    --background: rgba(99, 102, 241, 0.06);
     --padding-start: 12px;
     border-radius: 8px;
-    border: 1px solid rgba(34, 55, 79, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.15);
   }
 }
 
 .status-box {
-  background: rgba(34, 55, 79, 0.06);
+  background: rgba(99, 102, 241, 0.06);
   border-radius: 12px;
   padding: 1.25rem;
-  border: 1px solid rgba(34, 55, 79, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.15);
   .status-message {
     margin: 0 0 0.5rem 0;
     color: var(--ion-text-color);

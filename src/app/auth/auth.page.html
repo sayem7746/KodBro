@@ -10,7 +10,8 @@
 <ion-content [fullscreen]="true" class="bg-cream">
   <div class="auth-inner flex flex-col min-h-full px-6 py-8">
     <div class="auth-header mb-8">
-      <h1 class="text-2xl font-bold mb-1 text-navy">{{ isSignUp ? 'Create an account' : 'Welcome back' }}</h1>
+      <img src="assets/kodbro-logo.png" alt="KodBro" class="h-12 mb-4 object-contain" />
+      <h1 class="text-2xl font-bold mb-1 text-slate">{{ isSignUp ? 'Create an account' : 'Welcome back' }}</h1>
       <p class="text-sm opacity-90 text-steel">{{ isSignUp ? 'Enter your details to get started.' : 'Enter your details to continue.' }}</p>
     </div>
 
@@ -49,7 +50,7 @@
         expand="block"
         type="submit"
         [disabled]="loading"
-        class="ion-button--red mt-6 h-12 rounded-xl font-semibold"
+        class="ion-button--primary mt-6 h-12 rounded-xl font-semibold"
       >
         {{ loading ? 'Please wait...' : (isSignUp ? 'Create account' : 'Sign in') }}
       </ion-button>

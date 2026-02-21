@@ -4,14 +4,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Palette from design: warm reds, cream, navy, steel blue
-        maroon: '#702827',
-        red: '#D43B35',
-        coral: '#EE665E',
-        cream: '#FDF6EE',
-        navy: '#2E4456',
-        steel: '#517897',
-        sky: '#97BBD6',
+        // KodBro logo palette: cyan-blue → indigo → purple
+        cyan: '#00BFFF',
+        blue: '#0095E0',
+        indigo: '#6366F1',
+        violet: '#7C3AED',
+        purple: '#8B5CF6',
+        slate: '#1E293B',
+        cream: '#F8FAFC',
+        steel: '#64748B',
+        navy: '#1E293B', // alias for slate (dark text)
+        red: '#EF4444',  // for terminal close dot, errors
       },
     },
   },

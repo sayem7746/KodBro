@@ -1,21 +1,21 @@
 // For information on how to create your own theme, please refer to:
 // https://ionicframework.com/docs/theming/
 
-// App color palette (maroon, red, coral, cream, navy, steel, sky)
+// KodBro palette: cyan-blue → indigo → purple (matches logo gradient)
 :root {
-  --ion-color-primary: #2e4456;
-  --ion-color-primary-rgb: 46, 68, 86;
-  --ion-color-primary-contrast: #fdf6ee;
-  --ion-color-primary-contrast-rgb: 253, 246, 238;
-  --ion-color-primary-shade: #293c4d;
-  --ion-color-primary-tint: #435767;
+  --ion-color-primary: #0095e0;
+  --ion-color-primary-rgb: 0, 149, 224;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #0083c5;
+  --ion-color-primary-tint: #1aa0e3;
 
-  --ion-color-secondary: #d43b35;
-  --ion-color-secondary-rgb: 212, 59, 53;
+  --ion-color-secondary: #7c3aed;
+  --ion-color-secondary-rgb: 124, 58, 237;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #bb3430;
-  --ion-color-secondary-tint: #d84f49;
+  --ion-color-secondary-shade: #6d33d1;
+  --ion-color-secondary-tint: #894eef;
 
-  --app-text-color: #fdf6ee;
+  --app-text-color: #f8fafc;
 }

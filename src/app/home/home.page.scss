@@ -13,7 +13,7 @@
 }
 
 .ssh-bar {
-  background: rgba(34, 55, 79, 0.15);
+  background: rgba(30, 41, 59, 0.15);
 }
 
 .terminal-input.server-url-input {
@@ -21,7 +21,7 @@
   min-width: 120px;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(34, 55, 79, 0.3);
+  border: 1px solid rgba(30, 41, 59, 0.3);
   background: #1a1d23;
   color: #e4e4e7;
   font-size: 13px;
@@ -42,7 +42,7 @@
   }
 
   &.out {
-    color: #85a9cb;
+    color: #7dd3fc;
   }
 
   &.err {
@@ -80,11 +80,11 @@
   transition: background 0.15s;
 
   &.connect {
-    background: #22374f;
-    color: #f8f2e4;
+    background: linear-gradient(135deg, #0095e0 0%, #7c3aed 100%);
+    color: #f8fafc;
 
     &:hover {
-      background: #2d4560;
+      background: linear-gradient(135deg, #0083c5 0%, #6d33d1 100%);
     }
   }
 

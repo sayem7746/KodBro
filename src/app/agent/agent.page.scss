@@ -16,12 +16,12 @@
   ion-label,
   ion-checkbox,
   p {
-    --color: #2e4456;
+    --color: #1e293b;
     --background: transparent;
     --background-activated: rgba(46, 68, 86, 0.06);
     --background-focused: transparent;
     --background-hover: rgba(46, 68, 86, 0.04);
-    color: #2e4456;
+    color: #1e293b;
   }
 
   ion-item {
@@ -31,34 +31,41 @@
   }
 
   ion-input {
-    --color: #2e4456;
+    --color: #1e293b;
     --background: #ffffff;
     --placeholder-color: rgba(46, 68, 86, 0.6);
     --padding-start: 12px;
     --padding-end: 12px;
-    --highlight-color-focused: #2e4456;
-    --highlight-color-invalid: #d43b35;
-    --highlight-color-valid: #2e4456;
+    --highlight-color-focused: #1e293b;
+  --highlight-color-invalid: #ef4444;
+  --highlight-color-valid: #1e293b;
   }
 
   ion-checkbox {
     --background: #ffffff;
-    --background-checked: #2e4456;
+    --background-checked: #1e293b;
     --border-color: rgba(46, 68, 86, 0.3);
-    --border-color-checked: #2e4456;
+    --border-color-checked: #1e293b;
   }
 
   ion-checkbox::part(label) {
-    color: #2e4456;
+    color: #1e293b;
   }
 }
 
 /* Deploy form - same visibility for GitHub inputs */
+.deploy-form ion-item,
 .deploy-form ion-input,
 .deploy-form ion-label,
 .deploy-form ion-checkbox {
-  --color: #2e4456;
-  color: #2e4456;
+  --background: transparent !important;
+  --color: #1e293b;
+  color: #1e293b;
+}
+
+.deploy-form ion-checkbox {
+  --background: #ffffff !important;
+  --background-checked: #1e293b !important;
 }
 
 .deploy-form ion-input {

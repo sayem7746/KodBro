@@ -1,10 +1,10 @@
 ion-toolbar.auth-toolbar {
-  --color: #2e4456;
-  --background: #fdf6ee;
+  --color: #1e293b;
+  --background: #f8fafc;
 }
 
 .auth-inner {
-  color: #2e4456;
+  color: #1e293b;
 }
 
 .auth-input {
@@ -13,32 +13,32 @@ ion-toolbar.auth-toolbar {
   --inner-padding-end: 0;
   --min-height: 52px;
   --background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(81, 120, 151, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .auth-inner ion-input {
-  --color: #2e4456;
-  --placeholder-color: rgba(46, 68, 86, 0.5);
+  --color: #1e293b;
+  --placeholder-color: rgba(30, 41, 59, 0.5);
 }
 
 .auth-inner ion-label {
-  color: #2e4456;
+  color: #1e293b;
 }
 
 .auth-link {
-  color: #d43b35;
+  color: #7c3aed;
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 0.2s ease;
 }
 
 .auth-link:hover {
-  color: #ee665e;
+  color: #8b5cf6;
 }
 
-ion-button.ion-button--red {
-  --background: #d43b35;
-  --background-hover: #bb3430;
-  --background-activated: #a02f2d;
+ion-button.ion-button--primary {
+  --background: linear-gradient(135deg, #0095e0 0%, #7c3aed 100%);
+  --background-hover: linear-gradient(135deg, #0083c5 0%, #6d33d1 100%);
+  --background-activated: linear-gradient(135deg, #0077b3 0%, #5b21b6 100%);
   --color: #ffffff;
 }

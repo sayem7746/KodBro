@@ -1,5 +1,10 @@
 <ion-header [translucent]="true">
   <ion-toolbar class="app-text">
+    <ion-buttons slot="start">
+      <a routerLink="/home" class="flex items-center">
+        <img src="assets/kodbro-logo.png" alt="KodBro" class="h-8 object-contain" />
+      </a>
+    </ion-buttons>
     <ion-title>Welcome</ion-title>
     <ion-buttons slot="end">
       <ion-button [routerLink]="['/agent']">Build with Agent</ion-button>
@@ -14,6 +19,9 @@
 <ion-content [fullscreen]="true" class="bg-cream app-text">
   <ion-header collapse="condense">
     <ion-toolbar class="app-text">
+      <ion-buttons slot="start">
+        <img src="assets/kodbro-logo.png" alt="KodBro" class="h-8 object-contain" />
+      </ion-buttons>
       <ion-title size="large">Welcome</ion-title>
     </ion-toolbar>
   </ion-header>

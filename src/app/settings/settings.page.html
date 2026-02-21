@@ -1,6 +1,9 @@
 <ion-header [translucent]="true">
   <ion-toolbar class="app-text">
     <ion-buttons slot="start">
+      <a routerLink="/home" class="flex items-center mr-2">
+        <img src="assets/kodbro-logo.png" alt="KodBro" class="h-8 object-contain" />
+      </a>
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
     <ion-title>Settings</ion-title>
@@ -29,7 +32,7 @@
             <ion-badge color="success" slot="end">Stored</ion-badge>
           }
         </ion-item>
-        <ion-item lines="none" class="create-app-item">
+        <ion-item lines="none" class="create-app-item token-input">
           <ion-input
             label="Personal access token"
             labelPlacement="stacked"
@@ -51,7 +54,7 @@
             <ion-badge color="success" slot="end">Stored</ion-badge>
           }
         </ion-item>
-        <ion-item lines="none" class="create-app-item">
+        <ion-item lines="none" class="create-app-item token-input">
           <ion-input
             label="Vercel API token"
             labelPlacement="stacked"
@@ -61,7 +64,7 @@
             placeholder="..."
           ></ion-input>
         </ion-item>
-        <ion-item lines="none" class="create-app-item">
+        <ion-item lines="none" class="create-app-item token-input">
           <ion-input
             label="Team ID (optional)"
             labelPlacement="stacked"
@@ -82,7 +85,7 @@
             <ion-badge color="success" slot="end">Stored</ion-badge>
           }
         </ion-item>
-        <ion-item lines="none" class="create-app-item">
+        <ion-item lines="none" class="create-app-item token-input">
           <ion-input
             label="Railway API token"
             labelPlacement="stacked"
