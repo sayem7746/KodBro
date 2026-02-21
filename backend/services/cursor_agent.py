@@ -227,28 +227,49 @@ def run_cursor_agent(
         # When RUNNING: show Cursor's output from every available source
         if status == "RUNNING":
             # 1. Log any output-like fields from agent data (including nested)
-            for key in ("output", "result", "message", "current_step", "last_message", "progress"):
+            for key in ("output", "result", "message", "current_step", "last_message", "progress", "steps", "events", "activity"):
                 val = data.get(key)
-                text = val if isinstance(val, str) else (val.get("text") or val.get("content") or val.get("message")) if isinstance(val, dict) else None
-                if isinstance(text, str) and len(text.strip()) > 10 and text != last_logged_summary:
-                    _log_agent_output(text, "[Cursor]")
-                    last_logged_summary = text
+                if val is None:
+                    continue
+                if isinstance(val, str) and len(val.strip()) > 10 and val != last_logged_summary:
+                    _log_agent_output(val, "[Cursor]")
+                    last_logged_summary = val
+                elif isinstance(val, dict):
+                    text = val.get("text") or val.get("content") or val.get("message")
+                    if isinstance(text, str) and len(text.strip()) > 10:
+                        _log_agent_output(text, "[Cursor]")
+                elif isinstance(val, list):
+                    for item in val:
+                        if isinstance(item, dict):
+                            t = item.get("text") or item.get("content") or item.get("message") or item.get("output")
+                            cmd = item.get("command") or item.get("cmd")
+                            if isinstance(t, str) and len(t.strip()) > 5:
+                                _log_agent_output(t, "[Step]")
+                            if isinstance(cmd, str) and cmd.strip():
+                                log(f"[CLI] $ {cmd[:200]}")
 
             # 2. Log summary updates
             if summary and summary != last_logged_summary and len(summary) > 15:
                 last_logged_summary = summary
                 _log_agent_output(summary, "[Progress]")
 
-            # 3. Fetch conversation and log new assistant messages
+            # 3. Fetch conversation and log ALL messages (assistant, tool, system, etc.)
             try:
                 conv = get_agent_conversation(api_key, agent_id)
                 msgs = conv.get("messages", []) or []
-                # Support both assistant_message and any message with text/content
                 for m in msgs[last_msg_count:]:
                     text = (m.get("text") or m.get("content") or m.get("body") or "").strip()
-                    msg_type = m.get("type", "")
-                    if text and ("assistant" in str(msg_type).lower() or msg_type == "model"):
-                        _log_agent_output(text, "[Agent]")
+                    msg_type = str(m.get("type", ""))
+                    # Log any message with substantial content (assistant, model, tool, command, etc.)
+                    if text and len(text) > 20:
+                        if "assistant" in msg_type.lower() or msg_type in ("model", "agent"):
+                            _log_agent_output(text, "[Agent]")
+                        elif "tool" in msg_type.lower() or "command" in msg_type.lower():
+                            log(f"[CLI] {text[:300]}{'...' if len(text) > 300 else ''}")
+                        elif "step" in msg_type.lower() or "thought" in msg_type.lower():
+                            _log_agent_output(text, "[Step]")
+                        else:
+                            _log_agent_output(text, "[Cursor]")
                 last_msg_count = len(msgs)
             except Exception:
                 pass

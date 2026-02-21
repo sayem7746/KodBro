@@ -114,6 +114,11 @@
     padding-left: 0.5rem;
     border-left: 2px solid rgba(30, 64, 175, 0.3);
   }
+  &[data-type='cli'] {
+    color: #059669;
+    font-family: ui-monospace, monospace;
+    padding-left: 0.25rem;
+  }
   &[data-type='progress'] {
     color: #047857;
     padding-left: 0.25rem;
