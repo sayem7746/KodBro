@@ -11,10 +11,6 @@ from database import User, get_db, init_db
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-# Bcrypt limit; reject longer passwords with clear error
-PASSWORD_MAX_BYTES = 72
-
-
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
@@ -36,11 +32,6 @@ class AuthResponse(BaseModel):
 @router.post("/signup", response_model=AuthResponse)
 def signup(req: SignupRequest, db: Session = Depends(get_db)):
     """Create a new user account."""
-    if len(req.password.encode("utf-8")) > PASSWORD_MAX_BYTES:
-        raise HTTPException(
-            status_code=400,
-            detail="Password cannot exceed 72 bytes (use a shorter password)",
-        )
     try:
         existing = db.query(User).filter(User.email == req.email).first()
         if existing:
