@@ -53,20 +53,54 @@ def list_user_jobs(
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    """List app jobs for the current user."""
-    from database import AppJob
-    rows = db.query(AppJob).filter(AppJob.user_id == user_id).order_by(AppJob.created_at.desc()).limit(50).all()
-    return [
-        {
+    """List app jobs and agent sessions for the current user (build history)."""
+    from database import AppJob, AgentSession
+
+    items = []
+
+    # App jobs (create-app flow)
+    job_rows = db.query(AppJob).filter(AppJob.user_id == user_id).order_by(AppJob.created_at.desc()).limit(50).all()
+    for r in job_rows:
+        items.append({
             "id": str(r.id),
             "app_name": r.app_name,
             "status": r.status,
             "repo_url": r.repo_url,
             "deploy_url": r.deploy_url,
             "created_at": r.created_at.isoformat() if r.created_at else None,
-        }
-        for r in rows
-    ]
+            "source": "create-app",
+        })
+
+    # Agent sessions (agent/home flow)
+    try:
+        session_rows = (
+            db.query(AgentSession)
+            .filter(AgentSession.user_id == user_id)
+            .order_by(AgentSession.created_at.desc())
+            .limit(50)
+            .all()
+        )
+        for r in session_rows:
+            if not r.session_uuid:
+                continue
+            app_name = getattr(r, "app_name", None) or "Agent app"
+            repo_url = r.cursor_repo_url
+            deploy_url = getattr(r, "deploy_url", None)
+            items.append({
+                "id": r.session_uuid,
+                "app_name": app_name,
+                "status": "deployed" if deploy_url else "agent",
+                "repo_url": repo_url,
+                "deploy_url": deploy_url,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "source": "agent",
+            })
+    except Exception:
+        pass  # AgentSession may lack new columns on older DBs
+
+    # Sort combined by created_at desc
+    items.sort(key=lambda x: x["created_at"] or "", reverse=True)
+    return items[:50]
 
 
 @router.put("/tokens/{provider}")

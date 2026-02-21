@@ -71,9 +71,12 @@ export class HistoryPage implements OnInit {
   statusColor(status: string): string {
     switch (status) {
       case 'done':
+      case 'deployed':
         return 'success';
       case 'failed':
         return 'danger';
+      case 'agent':
+        return 'primary';
       case 'pending':
       case 'generating':
       case 'pushing':

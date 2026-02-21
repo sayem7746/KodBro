@@ -88,6 +88,32 @@ def append_messages(session_id: str, role: str, content: Union[str, list]) -> No
             pass
 
 
+def update_session_metadata(
+    session_id: str,
+    app_name: Optional[str] = None,
+    deploy_url: Optional[str] = None,
+    repo_url: Optional[str] = None,
+) -> None:
+    """Update agent session metadata in DB (app_name, deploy_url, repo_url)."""
+    if not _use_db():
+        return
+    try:
+        from database import AgentSession as AgentSessionModel, SessionLocal
+        db = SessionLocal()
+        row = db.query(AgentSessionModel).filter(AgentSessionModel.session_uuid == session_id).first()
+        if row:
+            if app_name is not None:
+                row.app_name = app_name[:255] if app_name else None
+            if deploy_url is not None:
+                row.deploy_url = deploy_url
+            if repo_url is not None:
+                row.cursor_repo_url = repo_url
+            db.commit()
+        db.close()
+    except Exception:
+        pass
+
+
 def set_cursor_agent(session_id: str, agent_id: str, repo_url: str) -> None:
     """Store Cursor agent id and repo URL for follow-ups."""
     s = _store.get(session_id)

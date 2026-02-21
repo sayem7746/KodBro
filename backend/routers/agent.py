@@ -27,6 +27,7 @@ from agent_session_store import (
     delete_session,
     set_cursor_agent,
     set_user_git,
+    update_session_metadata,
 )
 
 # Import for 429 rate limit error handling (Gemini)
@@ -138,6 +139,9 @@ async def create_agent_session(
         if req.git and req.git.token:
             set_user_git(session_id, token=req.git.token, repo_name=req.git.repo_name)
         append_messages(session_id, "user", req.initial_message.strip())
+
+        app_name = (req.initial_message.strip() or "Agent app")[:255]
+        update_session_metadata(session_id, app_name=app_name)
 
         create_log_queue(session_id)
         asyncio.create_task(_run_agent_background(session_id, req.initial_message.strip()))
@@ -306,6 +310,9 @@ async def deploy_session(
             team_id=req.vercel.team_id,
             framework="nextjs",
         )
+
+        if vercel_ok and deploy_url:
+            update_session_metadata(session_id, deploy_url=deploy_url, repo_url=repo_url)
 
         return AgentDeployResponse(
             repo_url=repo_url,

@@ -106,8 +106,10 @@ class AgentSession(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     session_uuid = Column(String(36), unique=True, nullable=True, index=True)  # Links to in-memory session_id
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    app_name = Column(String(255), nullable=True)  # From initial prompt or user-provided title
     cursor_agent_id = Column(String(255), nullable=True)
     cursor_repo_url = Column(Text, nullable=True)
+    deploy_url = Column(Text, nullable=True)  # Set when user deploys from agent page
     message_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -120,3 +122,19 @@ def init_db():
     if engine is None:
         return
     Base.metadata.create_all(bind=engine)
+    _migrate_agent_sessions()
+
+
+def _migrate_agent_sessions():
+    """Add app_name and deploy_url to agent_sessions if missing (for existing DBs)."""
+    try:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS app_name VARCHAR(255)"
+            ))
+            conn.execute(text(
+                "ALTER TABLE agent_sessions ADD COLUMN IF NOT EXISTS deploy_url TEXT"
+            ))
+    except Exception:
+        pass  # Non-PostgreSQL or column already exists

@@ -21,7 +21,7 @@
     } @else if (error) {
       <ion-note color="danger" class="block">{{ error }}</ion-note>
     } @else if (jobs.length === 0) {
-      <p class="text-sm opacity-80">No apps yet. Create one from the home page.</p>
+      <p class="text-sm opacity-80">No apps yet. Build one from the home page with the agent.</p>
     } @else {
       <ion-list lines="full">
         @for (job of jobs; track job.id) {
