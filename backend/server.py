@@ -94,6 +94,16 @@ async def runtime_error_handler(request: Request, exc: RuntimeError):
     )
 
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """Catch any unhandled exception and return 500 with error message for debugging."""
+    from starlette.responses import JSONResponse
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {str(exc)}"},
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -129,6 +139,8 @@ async def health() -> dict:
     # Temporary debug output for agent endpoint troubleshooting
     debug: dict = {}
     try:
+        debug["database_url_set"] = bool(os.environ.get("DATABASE_URL"))
+        debug["jwt_secret_set"] = bool(os.environ.get("JWT_SECRET"))
         debug["gemini_api_key_set"] = bool(os.environ.get("GEMINI_API_KEY"))
         debug["cursor_api_key_set"] = bool(os.environ.get("CURSOR_API_KEY"))
         debug["cursor_github_token_set"] = bool(
