@@ -10,6 +10,7 @@ import {
   AgentGitConfig,
 } from '../services/agent.service';
 import { AuthService } from '../services/auth.service';
+import { LiveActivityService } from '../services/live-activity.service';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -76,6 +77,7 @@ export class AgentPage implements OnInit, OnDestroy, AfterViewChecked {
     private router: Router,
     private route: ActivatedRoute,
     private auth: AuthService,
+    private liveActivity: LiveActivityService,
   ) {}
 
   private async loadStoredTokens(): Promise<void> {
@@ -202,11 +204,14 @@ export class AgentPage implements OnInit, OnDestroy, AfterViewChecked {
         this.messages.push({ role: 'assistant', content: res.reply });
       } else {
         this.loading = true;
+        void this.liveActivity.start(msg.slice(0, 50) || this.agentAppTitle);
         this.streamSubscription = this.agent.streamSessionLogs(res.session_id).subscribe({
           next: (ev) => {
             if (ev.type === 'log') {
               this.logs = [...this.logs, ev.message];
+              void this.liveActivity.update('Building…', ev.message);
             } else if (ev.type === 'done') {
+              void this.liveActivity.end('Done', ev.reply?.slice(0, 80));
               this.messages.push({
                 role: 'assistant',
                 content: ev.reply,
@@ -216,10 +221,12 @@ export class AgentPage implements OnInit, OnDestroy, AfterViewChecked {
               this.streamSubscription?.unsubscribe();
               this.streamSubscription = null;
             } else if (ev.type === 'error') {
+              void this.liveActivity.end('Error', ev.error);
               this.error = ev.error;
             }
           },
           error: (err) => {
+            void this.liveActivity.end('Error', err instanceof Error ? err.message : 'Stream failed');
             this.error = err instanceof Error ? err.message : 'Stream failed';
             this.loading = false;
             this.streamSubscription = null;
@@ -259,11 +266,14 @@ export class AgentPage implements OnInit, OnDestroy, AfterViewChecked {
 
       if (res.streaming) {
         this.streamSubscription?.unsubscribe();
+        void this.liveActivity.start(msg.slice(0, 50) || this.agentAppTitle);
         this.streamSubscription = this.agent.streamSessionLogs(this.sessionId).subscribe({
           next: (ev) => {
             if (ev.type === 'log') {
               this.logs = [...this.logs, ev.message];
+              void this.liveActivity.update('Building…', ev.message);
             } else if (ev.type === 'done') {
+              void this.liveActivity.end('Done', ev.reply?.slice(0, 80));
               this.messages.push({
                 role: 'assistant',
                 content: ev.reply,
@@ -273,10 +283,12 @@ export class AgentPage implements OnInit, OnDestroy, AfterViewChecked {
               this.streamSubscription?.unsubscribe();
               this.streamSubscription = null;
             } else if (ev.type === 'error') {
+              void this.liveActivity.end('Error', ev.error);
               this.error = ev.error;
             }
           },
           error: (err) => {
+            void this.liveActivity.end('Error', err instanceof Error ? err.message : 'Stream failed');
             this.error = err instanceof Error ? err.message : 'Stream failed';
             this.loading = false;
             this.streamSubscription = null;
