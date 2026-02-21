@@ -1,10 +1,9 @@
 <ion-header [translucent]="true">
   <ion-toolbar class="app-text">
     <ion-buttons slot="start">
-      <a routerLink="/home" class="flex items-center mr-2">
+      <a routerLink="/home" class="flex items-center">
         <img src="assets/kodbro-logo.png" alt="KodBro" class="h-8 object-contain" />
       </a>
-      <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
     <ion-title>Create app</ion-title>
   </ion-toolbar>
@@ -19,6 +18,7 @@
             label="App name"
             labelPlacement="stacked"
             [(ngModel)]="appName"
+            (ngModelChange)="appName = normalizeAppName($event)"
             name="appName"
             placeholder="my-awesome-app"
             required
@@ -52,21 +52,28 @@
             <ion-badge color="success" slot="end">Using stored</ion-badge>
           }
         </ion-item>
-        <ion-item lines="none" class="create-app-item">
-          <ion-input
-            label="Personal access token"
-            labelPlacement="stacked"
-            type="password"
-            [(ngModel)]="gitToken"
-            name="gitToken"
-            [placeholder]="gitTokenStored ? 'Leave empty to use stored token' : 'ghp_...'"
-          ></ion-input>
-        </ion-item>
+        @if (!gitTokenStored) {
+          <ion-item lines="none" class="create-app-item">
+            <ion-input
+              label="Personal access token"
+              labelPlacement="stacked"
+              type="password"
+              [(ngModel)]="gitToken"
+              name="gitToken"
+              placeholder="ghp_..."
+            ></ion-input>
+          </ion-item>
+        }
         <ion-item lines="none">
           <ion-checkbox [(ngModel)]="gitCreateNew" name="gitCreateNew" labelPlacement="end">
             Create new repository
           </ion-checkbox>
         </ion-item>
+        @if (gitCreateNew) {
+          <ion-item lines="none" class="create-app-item">
+            <ion-note class="block text-xs">Repository: {{ appName || 'my-app' }}-{{ repoId }}</ion-note>
+          </ion-item>
+        }
         @if (!gitCreateNew) {
           <ion-item lines="none" class="create-app-item">
             <ion-input

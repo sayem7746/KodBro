@@ -27,6 +27,8 @@ export class CreateAppPage implements OnInit, OnDestroy {
   gitTokenStored = false;
   vercelTokenStored = false;
 
+  repoId = '';
+
   submitting = false;
   error: string | null = null;
   jobId: string | null = null;
@@ -44,7 +46,16 @@ export class CreateAppPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.repoId = this.randomHash();
     void this.loadStoredTokens();
+  }
+
+  private randomHash(): string {
+    return Math.random().toString(36).substring(2, 10);
+  }
+
+  normalizeAppName(value: string): string {
+    return value.replace(/\s/g, '').toLowerCase();
   }
 
   private async loadStoredTokens(): Promise<void> {
@@ -120,8 +131,12 @@ export class CreateAppPage implements OnInit, OnDestroy {
 
     this.submitting = true;
     try {
+      const baseName = this.appName.trim() || 'my-app';
+      const appNameForRepo = this.gitCreateNew
+        ? `${baseName}-${this.repoId}`
+        : baseName;
       const req: CreateAppRequest = {
-        app_name: this.appName.trim(),
+        app_name: appNameForRepo,
         description: this.description.trim(),
         prompt: this.prompt.trim(),
         git: {
@@ -195,5 +210,6 @@ export class CreateAppPage implements OnInit, OnDestroy {
     this.jobId = null;
     this.status = null;
     this.error = null;
+    this.repoId = this.randomHash();
   }
 }

@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   agentDefaults: {
-    initialPrompt: 'create an todo app based on nextjs',
+    initialPrompt: '',
     repoNamePrefix: 'my-app',
   },
 };

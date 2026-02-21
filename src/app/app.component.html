@@ -1,3 +1,27 @@
-<ion-app>
+<ion-app [class.has-bottom-nav]="showBottomNav">
   <ion-router-outlet></ion-router-outlet>
+  @if (showBottomNav) {
+    <nav class="bottom-nav" role="tablist">
+      <a routerLink="/home" routerLinkActive="tab-selected" [routerLinkActiveOptions]="{ exact: true }" class="tab-btn" role="tab">
+        <ion-icon name="home-outline"></ion-icon>
+        <span class="tab-label">Home</span>
+      </a>
+      <a routerLink="/agent" routerLinkActive="tab-selected" class="tab-btn" role="tab">
+        <ion-icon name="sparkles-outline"></ion-icon>
+        <span class="tab-label">Agent</span>
+      </a>
+      <a routerLink="/create-app" routerLinkActive="tab-selected" class="tab-btn" role="tab">
+        <ion-icon name="add-circle-outline"></ion-icon>
+        <span class="tab-label">Create</span>
+      </a>
+      <a routerLink="/history" routerLinkActive="tab-selected" class="tab-btn" role="tab">
+        <ion-icon name="folder-open-outline"></ion-icon>
+        <span class="tab-label">My Apps</span>
+      </a>
+      <a routerLink="/settings" routerLinkActive="tab-selected" class="tab-btn" role="tab">
+        <ion-icon name="settings-outline"></ion-icon>
+        <span class="tab-label">Settings</span>
+      </a>
+    </nav>
+  }
 </ion-app>

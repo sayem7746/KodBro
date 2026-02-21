@@ -39,11 +39,12 @@ export class AgentPage implements OnInit, OnDestroy {
   initialPrompt = '';
   starting = false;
 
-  // GitHub connection (optional, for Cursor agent - create repos in user's account)
-  showGitConnect = false;
-  agentGitToken = '';
-  agentRepoName = '';
+  // App title for repo name
+  agentAppTitle = 'my-app';
+  agentRepoId = '';
   agentGitCreateNew = true;
+
+  tokensLoaded = false;
 
   // Chat input
   chatInput = '';
@@ -51,6 +52,7 @@ export class AgentPage implements OnInit, OnDestroy {
   // Deploy
   showDeployForm = false;
   deployAppName = 'my-app';
+  deployRepoId = '';
   gitToken = '';
   gitCreateNew = true;
   gitRepoUrl = '';
@@ -98,12 +100,13 @@ export class AgentPage implements OnInit, OnDestroy {
       }
     } catch {
       // ignore
+    } finally {
+      this.tokensLoaded = true;
     }
   }
 
   private get effectiveAgentGitToken(): string {
-    const t = this.agentGitToken?.trim();
-    return t || this.storedAgentGitToken || '';
+    return this.storedAgentGitToken || '';
   }
 
   private get effectiveDeployGitToken(): string {
@@ -116,18 +119,17 @@ export class AgentPage implements OnInit, OnDestroy {
     return t || this.storedDeployVercelToken || '';
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const defaults = environment.agentDefaults;
     this.initialPrompt = defaults?.initialPrompt ?? '';
-    this.agentGitToken = '';
-    this.agentRepoName = defaults?.repoNamePrefix
-      ? `${defaults.repoNamePrefix}-${this.randomHash()}`
-      : `my-app-${this.randomHash()}`;
+    this.agentAppTitle = defaults?.repoNamePrefix ?? 'my-app';
+    this.agentRepoId = this.randomHash();
+    this.deployRepoId = this.randomHash();
 
-    void this.loadStoredTokens();
+    await this.loadStoredTokens();
 
     const prompt = this.route.snapshot.queryParamMap.get('prompt');
-    if (prompt?.trim()) {
+    if (prompt?.trim() && this.gitTokenStored) {
       this.initialPrompt = prompt.trim();
       void this.startSession();
     }
@@ -135,6 +137,10 @@ export class AgentPage implements OnInit, OnDestroy {
 
   private randomHash(): string {
     return Math.random().toString(36).substring(2, 10);
+  }
+
+  normalizeAppTitle(value: string): string {
+    return value.replace(/\s/g, '').toLowerCase();
   }
 
   ngOnDestroy(): void {
@@ -151,11 +157,14 @@ export class AgentPage implements OnInit, OnDestroy {
     this.starting = true;
     this.logs = [];
     try {
+      const repoName = this.agentGitCreateNew
+        ? `${(this.agentAppTitle || 'my-app').trim()}-${this.agentRepoId}`
+        : undefined;
       const git: AgentGitConfig | undefined =
         this.effectiveAgentGitToken
           ? {
               token: this.effectiveAgentGitToken,
-              repo_name: this.agentRepoName?.trim() || undefined,
+              repo_name: repoName,
               create_new: this.agentGitCreateNew,
             }
           : undefined;
@@ -209,11 +218,14 @@ export class AgentPage implements OnInit, OnDestroy {
     this.loading = true;
 
     try {
+      const repoName = this.agentGitCreateNew
+        ? `${(this.agentAppTitle || 'my-app').trim()}-${this.agentRepoId}`
+        : undefined;
       const git: AgentGitConfig | undefined =
         this.effectiveAgentGitToken
           ? {
               token: this.effectiveAgentGitToken,
-              repo_name: this.agentRepoName?.trim() || undefined,
+              repo_name: repoName,
               create_new: this.agentGitCreateNew,
             }
           : undefined;
@@ -234,6 +246,7 @@ export class AgentPage implements OnInit, OnDestroy {
   openDeployForm(): void {
     this.showDeployForm = true;
     this.deployResult = null;
+    this.deployRepoId = this.randomHash();
   }
 
   closeDeployForm(): void {
@@ -264,8 +277,12 @@ export class AgentPage implements OnInit, OnDestroy {
     this.deploying = true;
     this.deployResult = null;
     try {
+      const baseName = this.deployAppName.trim() || 'my-app';
+      const appNameForRepo = this.gitCreateNew
+        ? `${baseName}-${this.deployRepoId}`
+        : baseName;
       const req: AgentDeployRequest = {
-        app_name: this.deployAppName.trim(),
+        app_name: appNameForRepo,
         git: {
           provider: 'github',
           token: this.effectiveDeployGitToken,

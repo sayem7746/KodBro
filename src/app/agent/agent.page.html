@@ -1,20 +1,43 @@
 <ion-header [translucent]="true">
   <ion-toolbar class="app-text">
     <ion-buttons slot="start">
-      <a routerLink="/home" class="flex items-center mr-2">
+      <a routerLink="/home" class="flex items-center">
         <img src="assets/kodbro-logo.png" alt="KodBro" class="h-8 object-contain" />
       </a>
-      <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
     <ion-title>Build with Agent</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="bg-cream app-text">
-  <div class="agent-inner px-4 py-4 max-w-2xl mx-auto flex flex-col gap-4">
-    @if (!sessionId) {
+  <div class="agent-inner px-4 py-4 max-w-2xl mx-auto flex flex-col gap-4 relative">
+    @if (!tokensLoaded) {
+      <div class="flex items-center justify-center py-12">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+    } @else if (!gitTokenStored) {
+      <div class="token-required flex flex-col items-center justify-center py-12 px-4 text-center">
+        <ion-icon name="lock-closed-outline" class="text-4xl text-navy/60 mb-4"></ion-icon>
+        <p class="text-navy/90 mb-2">Save your GitHub token in Settings to use the agent.</p>
+        <p class="text-sm text-navy/70 mb-6">The agent needs GitHub access to create repositories and push code.</p>
+        <ion-button routerLink="/settings" expand="block" class="max-w-xs">
+          Go to Settings
+        </ion-button>
+      </div>
+    } @else if (!sessionId) {
       <!-- Start: describe what to build -->
       <div class="start-form flex flex-col gap-4">
+        <ion-item lines="none" class="agent-item">
+          <ion-input
+            label="Title"
+            labelPlacement="stacked"
+            [(ngModel)]="agentAppTitle"
+            (ngModelChange)="agentAppTitle = normalizeAppTitle($event)"
+            name="agentAppTitle"
+            placeholder="my-app"
+          ></ion-input>
+        </ion-item>
+        <ion-note class="block text-xs -mt-2">Repository: {{ agentAppTitle || 'my-app' }}-{{ agentRepoId }}</ion-note>
         <p class="text-navy/90">Describe what you want to build. The agent will create files and run commands for you.</p>
         <ion-item lines="none" class="agent-item">
           <ion-textarea
@@ -25,45 +48,6 @@
             rows="4"
           ></ion-textarea>
         </ion-item>
-
-        <!-- Connect GitHub - required for Cursor agent -->
-        <div class="git-connect-section">
-          <ion-item lines="none" button (click)="showGitConnect = !showGitConnect" class="cursor-pointer">
-            <ion-icon [name]="showGitConnect ? 'chevron-down' : 'chevron-forward'" slot="start"></ion-icon>
-            <ion-label class="text-navy">Connect GitHub</ion-label>
-          </ion-item>
-          @if (showGitConnect) {
-            <div class="git-connect-fields pl-6 pr-4 pb-3 space-y-2 mt-1">
-              <p class="text-sm text-navy/70">Connect your GitHub account to use the Cursor agent. Create a token at GitHub → Settings → Developer settings → Personal access tokens. For classic tokens, enable the <strong>repo</strong> scope. For fine-grained tokens, grant "Contents" and "Metadata" write access.</p>
-              <ion-item lines="none">
-                <ion-input
-                  label="Personal access token"
-                  labelPlacement="stacked"
-                  type="password"
-                  [(ngModel)]="agentGitToken"
-                  name="agentGitToken"
-                  placeholder="ghp_..."
-                ></ion-input>
-              </ion-item>
-              <ion-item lines="none">
-                <ion-checkbox [(ngModel)]="agentGitCreateNew" name="agentGitCreateNew" labelPlacement="end">
-                  Create new repository
-                </ion-checkbox>
-              </ion-item>
-              @if (agentGitCreateNew) {
-                <ion-item lines="none">
-                  <ion-input
-                    label="Repository name"
-                    labelPlacement="stacked"
-                    [(ngModel)]="agentRepoName"
-                    name="agentRepoName"
-                    placeholder="my-todo-app"
-                  ></ion-input>
-                </ion-item>
-              }
-            </div>
-          }
-        </div>
 
         @if (error) {
           <ion-note color="danger" class="block px-2">{{ error }}</ion-note>
@@ -130,42 +114,6 @@
           <ion-note color="danger" class="block px-3 py-2">{{ error }}</ion-note>
         }
 
-        <!-- Connect GitHub (when in session - for Cursor agent) -->
-        <div class="git-connect-section border-t border-navy/10">
-          <ion-item lines="none" button (click)="showGitConnect = !showGitConnect" class="cursor-pointer min-h-[36px]">
-            <ion-icon [name]="showGitConnect ? 'chevron-down' : 'chevron-forward'" slot="start" class="text-navy/70"></ion-icon>
-            <ion-label class="text-sm text-navy">Connect GitHub (for Cursor agent)</ion-label>
-          </ion-item>
-          @if (showGitConnect) {
-            <div class="git-connect-fields pl-4 pr-2 pb-2 space-y-2 mt-1">
-              <ion-item lines="none" class="min-h-0">
-                <ion-input
-                  label="Personal access token"
-                  labelPlacement="stacked"
-                  type="password"
-                  [(ngModel)]="agentGitToken"
-                  placeholder="ghp_..."
-                  class="text-sm"
-                ></ion-input>
-              </ion-item>
-              <ion-item lines="none" class="min-h-0">
-                <ion-checkbox [(ngModel)]="agentGitCreateNew" labelPlacement="end">Create new repository</ion-checkbox>
-              </ion-item>
-              @if (agentGitCreateNew) {
-                <ion-item lines="none" class="min-h-0">
-                  <ion-input
-                    label="Repository name"
-                    labelPlacement="stacked"
-                    [(ngModel)]="agentRepoName"
-                    placeholder="my-todo-app"
-                    class="text-sm"
-                  ></ion-input>
-                </ion-item>
-              }
-            </div>
-          }
-        </div>
-
         <div class="chat-input p-3 border-t border-navy/10 flex gap-2">
           <ion-textarea
             [(ngModel)]="chatInput"
@@ -195,26 +143,19 @@
         <form (ngSubmit)="deploy()" class="flex flex-col gap-3">
           <ion-item lines="none">
             <ion-input
-              label="App name"
+              label="App title"
               labelPlacement="stacked"
               [(ngModel)]="deployAppName"
+              (ngModelChange)="deployAppName = normalizeAppTitle($event)"
               name="deployAppName"
-              placeholder="my-awesome-app"
+              placeholder="my-app"
             ></ion-input>
           </ion-item>
-          <ion-item lines="full" class="section-label">
-            <ion-label><strong>Git (GitHub)</strong></ion-label>
-          </ion-item>
-          <ion-item lines="none">
-            <ion-input
-              label="Personal access token"
-              labelPlacement="stacked"
-              type="password"
-              [(ngModel)]="gitToken"
-              name="gitToken"
-              placeholder="ghp_..."
-            ></ion-input>
-          </ion-item>
+          @if (gitCreateNew) {
+            <ion-item lines="none">
+              <ion-note class="block text-xs">Repository: {{ deployAppName || 'my-app' }}-{{ deployRepoId }}</ion-note>
+            </ion-item>
+          }
           <ion-item lines="none">
             <ion-checkbox [(ngModel)]="gitCreateNew" name="gitCreateNew" labelPlacement="end">
               Create new repository
@@ -233,17 +174,22 @@
           }
           <ion-item lines="full" class="section-label">
             <ion-label><strong>Vercel</strong></ion-label>
+            @if (vercelTokenStored) {
+              <ion-badge color="success" slot="end">Using stored</ion-badge>
+            }
           </ion-item>
-          <ion-item lines="none">
-            <ion-input
-              label="Vercel API token"
-              labelPlacement="stacked"
-              type="password"
-              [(ngModel)]="vercelToken"
-              name="vercelToken"
-              placeholder="..."
-            ></ion-input>
-          </ion-item>
+          @if (!vercelTokenStored) {
+            <ion-item lines="none">
+              <ion-input
+                label="Vercel API token"
+                labelPlacement="stacked"
+                type="password"
+                [(ngModel)]="vercelToken"
+                name="vercelToken"
+                placeholder="..."
+              ></ion-input>
+            </ion-item>
+          }
           <ion-item lines="none">
             <ion-input
               label="Team ID (optional)"

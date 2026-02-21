@@ -117,3 +117,8 @@ ion-header:has(+ ion-content.bg-cream) ion-toolbar ion-button {
     --ion-toolbar-color: #f8f5ed;
   }
 }
+
+/* Bottom nav padding - prevent content from being hidden behind fixed nav */
+ion-app.has-bottom-nav ion-content {
+  --padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+}

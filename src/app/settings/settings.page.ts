@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-
-const API_BASE = 'https://agent.kodbro.com';
 
 @Component({
   selector: 'app-settings',
@@ -23,7 +22,15 @@ export class SettingsPage implements OnInit {
   message: string | null = null;
   error: string | null = null;
 
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+  ) {}
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/auth']);
+  }
 
   ngOnInit(): void {
     this.loadStoredStatus();
