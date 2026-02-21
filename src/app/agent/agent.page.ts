@@ -163,6 +163,10 @@ export class AgentPage implements OnInit, OnDestroy, AfterViewChecked {
     if (log.startsWith('[Result]')) return 'result';
     if (log.startsWith('[Round]')) return 'round';
     if (log.startsWith('[Step]')) return 'step';
+    if (log.startsWith('[Agent]') || log.startsWith('[Cursor]')) return 'agent';
+    if (log.startsWith('[Progress]')) return 'progress';
+    if (log.startsWith('[Activity]')) return 'activity';
+    if (log.startsWith('[Status]')) return 'status';
     if (log.startsWith('[Polling]')) return 'polling';
     return 'info';
   }

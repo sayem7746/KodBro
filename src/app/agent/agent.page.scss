@@ -103,9 +103,20 @@
   }
   &[data-type='round'],
   &[data-type='step'],
+  &[data-type='status'],
+  &[data-type='activity'],
   &[data-type='polling'] {
     color: rgba(46, 68, 86, 0.75);
     font-weight: 500;
+  }
+  &[data-type='agent'] {
+    color: #1e40af;
+    padding-left: 0.5rem;
+    border-left: 2px solid rgba(30, 64, 175, 0.3);
+  }
+  &[data-type='progress'] {
+    color: #047857;
+    padding-left: 0.25rem;
   }
 }
 

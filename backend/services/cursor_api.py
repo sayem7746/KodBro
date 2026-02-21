@@ -94,21 +94,22 @@ def add_followup(api_key: str, agent_id: str, prompt_text: str) -> dict[str, Any
 def poll_agent_until_done(
     api_key: str,
     agent_id: str,
-    poll_interval: float = 15.0,
+    poll_interval: float = 5.0,
     max_wait_seconds: float = 600.0,
-    on_poll: Optional[Callable[[str, dict[str, Any]], None]] = None,
+    on_poll: Optional[Callable[[str, dict[str, Any], float], None]] = None,
 ) -> tuple[str, dict[str, Any]]:
     """
     Poll agent until FINISHED, FAILED, or STOPPED.
     Returns (status, agent_data).
-    on_poll: optional callback(status, data) called on each poll.
+    on_poll: optional callback(status, data, elapsed_seconds) called on each poll.
     """
     start = time.monotonic()
     while True:
         data = get_agent(api_key, agent_id)
         status = data.get("status", "").upper()
+        elapsed = time.monotonic() - start
         if on_poll:
-            on_poll(status, data)
+            on_poll(status, data, elapsed)
         if status in ("FINISHED", "FAILED", "STOPPED"):
             return status, data
         if time.monotonic() - start > max_wait_seconds:

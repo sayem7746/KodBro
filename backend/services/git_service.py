@@ -2,6 +2,8 @@
 Push a local directory to a Git remote (GitHub) using user token.
 Supports existing repo URL or create-new via GitHub API.
 """
+import re
+import time
 import os
 import subprocess
 from typing import Optional
@@ -53,6 +55,33 @@ def create_github_repo(token: str, name: str, description: str, private: bool = 
         return data.get("clone_url") or (data.get("html_url", "") + ".git")
 
 
+def _parse_repo_url(clone_url: str) -> Optional[tuple[str, str]]:
+    """Extract (owner, repo) from clone URL like https://github.com/owner/repo.git"""
+    m = re.match(r"https?://(?:[^@]+@)?(?:api\.)?github\.com[/:]([^/]+)/([^/]+?)(?:\.git)?$", clone_url)
+    if m:
+        return m.group(1), m.group(2)
+    return None
+
+
+def verify_branch_exists(token: str, clone_url: str, branch: str = "main") -> bool:
+    """Check if branch exists in repo via GitHub API. Returns True if branch exists."""
+    parsed = _parse_repo_url(clone_url)
+    if not parsed:
+        return False
+    owner, repo = parsed
+    url = f"https://api.github.com/repos/{owner}/{repo}/branches/{branch}"
+    headers = {
+        "Authorization": f"Bearer {token.strip()}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    try:
+        with httpx.Client(timeout=15) as client:
+            resp = client.get(url, headers=headers)
+            return resp.status_code == 200
+    except Exception:
+        return False
+
+
 def push_directory_to_repo(
     local_dir: str,
     repo_url: str,
@@ -84,9 +113,15 @@ def push_directory_to_repo(
         return False, out
     ok, out = _run(["git", "commit", "-m", "Initial commit from KodBro"], local_dir)
     if not ok:
-        # Maybe nothing to commit (empty repo?)
+        # Nothing to commit - ensure we have at least one file and commit
         if "nothing to commit" in out.lower():
-            pass
+            ensure_file = os.path.join(local_dir, ".kodbro-init")
+            with open(ensure_file, "w") as f:
+                f.write("# KodBro\n")
+            _run(["git", "add", ".kodbro-init"], local_dir)
+            ok, out = _run(["git", "commit", "-m", "Initial commit from KodBro"], local_dir)
+            if not ok:
+                return False, out
         else:
             return False, out
     ok, out = _run(["git", "remote", "add", "origin", repo_url], local_dir)

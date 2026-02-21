@@ -6,6 +6,7 @@ Creates a GitHub repo per session, pushes project dir, launches Cursor agent, po
 import os
 import re
 import subprocess
+import time
 import uuid
 from typing import Callable, Optional
 
@@ -15,7 +16,11 @@ from services.cursor_api import (
     launch_agent,
     poll_agent_until_done,
 )
-from services.git_service import create_github_repo, push_directory_to_repo
+from services.git_service import (
+    create_github_repo,
+    push_directory_to_repo,
+    verify_branch_exists,
+)
 
 CURSOR_AGENT_BRANCH = "agent-output"
 
@@ -81,6 +86,18 @@ def _ensure_repo_and_push(
     ok, out = push_directory_to_repo(project_dir, push_url, branch="main")
     if not ok:
         raise RuntimeError(f"Failed to push to GitHub: {out}")
+
+    # Verify branch exists (GitHub may need a moment to propagate)
+    for attempt in range(5):
+        if verify_branch_exists(github_token, repo_url, "main"):
+            break
+        if attempt < 4:
+            time.sleep(2)
+    else:
+        raise RuntimeError(
+            "Branch 'main' not visible on GitHub yet. The push may have succeeded but GitHub needs more time. "
+            "Please try again in a minute."
+        )
     return repo_url
 
 
@@ -155,9 +172,11 @@ def run_cursor_agent(
             f"https://x-access-token:{github_token}@github.com/",
         )
         log("[Step] Launching Cursor agent...")
+        # Cursor expects https://github.com/owner/repo (no .git)
+        repo_for_cursor = repo_url.rstrip("/").removesuffix(".git")
         resp = launch_agent(
             api_key,
-            repository=repo_url,
+            repository=repo_for_cursor,
             prompt_text=user_content,
             ref="main",
             model=model,
@@ -170,16 +189,73 @@ def run_cursor_agent(
         set_cursor_state(agent_id, repo_url)
 
     # Poll until done
-    log("[Step] Agent running (polling every 15s)...")
+    log("[Step] Agent running (polling every 5s)...")
 
-    def on_poll(status: str, data: dict) -> None:
+    last_status: Optional[str] = None
+    last_msg_count = 0
+    last_logged_summary = ""
+    poll_count = 0
+
+    def _log_agent_output(text: str, prefix: str = "[Agent]") -> None:
+        """Log agent output, splitting long text into lines."""
+        if not text or not text.strip():
+            return
+        lines = text.strip().split("\n")
+        for line in lines[:12]:
+            if line.strip():
+                log(f"{prefix} {line[:250]}{'...' if len(line) > 250 else ''}")
+        if len(lines) > 12:
+            log(f"{prefix} ... ({len(lines) - 12} more lines)")
+
+    def on_poll(status: str, data: dict, elapsed: float) -> None:
+        nonlocal last_status, last_msg_count, last_logged_summary, poll_count
         if not on_log:
             return
+        poll_count += 1
         summary = data.get("summary", "")
-        if summary:
-            log(f"[Polling] status={status} | summary: {summary[:120]}{'...' if len(summary) > 120 else ''}")
-        else:
-            log(f"[Polling] status={status}")
+        elapsed_str = f" ({int(elapsed)}s)"
+
+        # Log status when it changes
+        if status != last_status:
+            last_status = status
+            if summary:
+                log(f"[Status] {status}{elapsed_str} | {summary[:150]}{'...' if len(summary) > 150 else ''}")
+                last_logged_summary = summary
+            else:
+                log(f"[Status] {status}{elapsed_str}")
+
+        # When RUNNING: show Cursor's output from every available source
+        if status == "RUNNING":
+            # 1. Log any output-like fields from agent data (including nested)
+            for key in ("output", "result", "message", "current_step", "last_message", "progress"):
+                val = data.get(key)
+                text = val if isinstance(val, str) else (val.get("text") or val.get("content") or val.get("message")) if isinstance(val, dict) else None
+                if isinstance(text, str) and len(text.strip()) > 10 and text != last_logged_summary:
+                    _log_agent_output(text, "[Cursor]")
+                    last_logged_summary = text
+
+            # 2. Log summary updates
+            if summary and summary != last_logged_summary and len(summary) > 15:
+                last_logged_summary = summary
+                _log_agent_output(summary, "[Progress]")
+
+            # 3. Fetch conversation and log new assistant messages
+            try:
+                conv = get_agent_conversation(api_key, agent_id)
+                msgs = conv.get("messages", []) or []
+                # Support both assistant_message and any message with text/content
+                for m in msgs[last_msg_count:]:
+                    text = (m.get("text") or m.get("content") or m.get("body") or "").strip()
+                    msg_type = m.get("type", "")
+                    if text and ("assistant" in str(msg_type).lower() or msg_type == "model"):
+                        _log_agent_output(text, "[Agent]")
+                last_msg_count = len(msgs)
+            except Exception:
+                pass
+
+            # 4. Periodic "working" feedback so user sees activity (every 2 polls)
+            if poll_count % 2 == 0 and not summary:
+                log(f"[Activity] Agent working...{elapsed_str}")
 
     status, agent_data = poll_agent_until_done(
         api_key,
