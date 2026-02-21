@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
-const MAIN_ROUTES = ['/home', '/agent', '/create-app', '/history', '/settings'];
+const MAIN_ROUTES = ['/home', '/create-app', '/history', '/settings'];
 
 @Component({
   selector: 'app-root',

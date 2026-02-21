@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -23,7 +23,7 @@ interface ChatMessage {
   styleUrls: ['./agent.page.scss'],
   standalone: false,
 })
-export class AgentPage implements OnInit, OnDestroy {
+export class AgentPage implements OnInit, OnDestroy, AfterViewChecked {
   // Session state
   sessionId: string | null = null;
   messages: ChatMessage[] = [];
@@ -34,6 +34,9 @@ export class AgentPage implements OnInit, OnDestroy {
   logs: string[] = [];
   showLogPanel = true;
   streamSubscription: Subscription | null = null;
+
+  @ViewChild('logContainer') logContainer?: ElementRef<HTMLDivElement>;
+  private logsLengthPrev = 0;
 
   // Start form (before session exists)
   initialPrompt = '';
@@ -147,6 +150,23 @@ export class AgentPage implements OnInit, OnDestroy {
     this.streamSubscription?.unsubscribe();
   }
 
+  ngAfterViewChecked(): void {
+    if (this.logs.length !== this.logsLengthPrev && this.logContainer?.nativeElement) {
+      this.logsLengthPrev = this.logs.length;
+      this.logContainer.nativeElement.scrollTop = this.logContainer.nativeElement.scrollHeight;
+    }
+  }
+
+  getLogType(log: string): string {
+    if (log.startsWith('[Thinking]')) return 'thinking';
+    if (log.startsWith('[Tool]')) return 'tool';
+    if (log.startsWith('[Result]')) return 'result';
+    if (log.startsWith('[Round]')) return 'round';
+    if (log.startsWith('[Step]')) return 'step';
+    if (log.startsWith('[Polling]')) return 'polling';
+    return 'info';
+  }
+
   async startSession(): Promise<void> {
     this.error = null;
     const msg = this.initialPrompt?.trim();
@@ -216,6 +236,7 @@ export class AgentPage implements OnInit, OnDestroy {
     this.messages.push({ role: 'user', content: msg });
     this.chatInput = '';
     this.loading = true;
+    this.logs = [];
 
     try {
       const repoName = this.agentGitCreateNew
@@ -230,15 +251,43 @@ export class AgentPage implements OnInit, OnDestroy {
             }
           : undefined;
       const res = await this.agent.sendMessage(this.sessionId, msg, git);
-      this.messages.push({
-        role: 'assistant',
-        content: res.reply,
-        toolSummary: res.tool_summary,
-      });
+
+      if (res.streaming) {
+        this.streamSubscription?.unsubscribe();
+        this.streamSubscription = this.agent.streamSessionLogs(this.sessionId).subscribe({
+          next: (ev) => {
+            if (ev.type === 'log') {
+              this.logs = [...this.logs, ev.message];
+            } else if (ev.type === 'done') {
+              this.messages.push({
+                role: 'assistant',
+                content: ev.reply,
+                toolSummary: ev.tool_summary,
+              });
+              this.loading = false;
+              this.streamSubscription?.unsubscribe();
+              this.streamSubscription = null;
+            } else if (ev.type === 'error') {
+              this.error = ev.error;
+            }
+          },
+          error: (err) => {
+            this.error = err instanceof Error ? err.message : 'Stream failed';
+            this.loading = false;
+            this.streamSubscription = null;
+          },
+        });
+      } else {
+        this.messages.push({
+          role: 'assistant',
+          content: res.reply ?? '',
+          toolSummary: res.tool_summary ?? undefined,
+        });
+        this.loading = false;
+      }
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to send message';
       this.messages.pop(); // Remove the user message we added
-    } finally {
       this.loading = false;
     }
   }

@@ -144,17 +144,17 @@ def run_cursor_agent(
     agent_id, repo_url = get_cursor_state()
     if agent_id and repo_url:
         # Follow-up to existing agent
-        log("Sending follow-up to Cursor agent...")
+        log("[Step] Sending follow-up to Cursor agent...")
         add_followup(api_key, agent_id, user_content)
     else:
         # New agent: create repo, push, launch
-        log("Creating GitHub repository and pushing initial code...")
+        log("[Step] Creating GitHub repository and pushing initial code...")
         repo_url = _ensure_repo_and_push(project_dir, session_id, github_token, repo_name=repo_name)
         push_url = repo_url.replace(
             "https://github.com/",
             f"https://x-access-token:{github_token}@github.com/",
         )
-        log("Launching Cursor agent...")
+        log("[Step] Launching Cursor agent...")
         resp = launch_agent(
             api_key,
             repository=repo_url,
@@ -170,17 +170,27 @@ def run_cursor_agent(
         set_cursor_state(agent_id, repo_url)
 
     # Poll until done
-    log("Agent running (polling every 15s)...")
+    log("[Step] Agent running (polling every 15s)...")
+
+    def on_poll(status: str, data: dict) -> None:
+        if not on_log:
+            return
+        summary = data.get("summary", "")
+        if summary:
+            log(f"[Polling] status={status} | summary: {summary[:120]}{'...' if len(summary) > 120 else ''}")
+        else:
+            log(f"[Polling] status={status}")
+
     status, agent_data = poll_agent_until_done(
         api_key,
         agent_id,
-        on_poll=lambda s, d: log(f"Poll: status={s}") if on_log else None,
+        on_poll=on_poll,
     )
     summary = agent_data.get("summary", "")
 
     # Pull agent's changes into project_dir
     if status == "FINISHED":
-        log("Agent finished. Pulling changes...")
+        log("[Step] Agent finished. Pulling changes into project...")
         _pull_agent_branch(project_dir, CURSOR_AGENT_BRANCH)
 
     # Get conversation for reply text

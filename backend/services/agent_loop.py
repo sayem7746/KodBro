@@ -108,6 +108,37 @@ def run_command(project_dir: str, command: str) -> dict[str, Any]:
         return {"error": str(e), "ok": False}
 
 
+def _format_result_preview(result: dict[str, Any], name: str, max_len: int = 300) -> str:
+    """Format tool result for logging. Show more detail for read_file and run_command."""
+    if name == "read_file":
+        if "error" in result:
+            return str(result)
+        content = result.get("content", "")
+        if content:
+            lines = content.split("\n")[:5]
+            preview = "\n".join(lines)
+            if len(content) > len(preview):
+                preview += "\n..."
+            return preview[:max_len] + ("..." if len(preview) > max_len else "")
+        return str(result)[:max_len]
+    if name == "run_command":
+        if "error" in result:
+            return str(result)
+        out = result.get("stdout", "") or ""
+        err = result.get("stderr", "") or ""
+        exit_code = result.get("exit_code", "")
+        parts = []
+        if out:
+            parts.append(f"stdout: {out[:150]}{'...' if len(out) > 150 else ''}")
+        if err:
+            parts.append(f"stderr: {err[:150]}{'...' if len(err) > 150 else ''}")
+        if exit_code is not None:
+            parts.append(f"exit_code={exit_code}")
+        return " | ".join(parts) if parts else str(result)[:max_len]
+    s = str(result)
+    return s[:max_len] + ("..." if len(s) > max_len else "")
+
+
 def _execute_tool(project_dir: str, name: str, args: dict[str, Any]) -> dict[str, Any]:
     """Execute a tool by name and return result dict."""
     if name == "read_file":
@@ -204,7 +235,7 @@ def run_agent_loop(
         if on_log:
             on_log(msg)
 
-    log("Starting Gemini agent...")
+    log("[Step] Starting Gemini agent...")
 
     from google import genai
     from google.genai import types
@@ -262,26 +293,35 @@ def run_agent_loop(
         function_calls = response.function_calls if hasattr(response, "function_calls") else None
         if not function_calls:
             text = response.text if hasattr(response, "text") else ""
-            log("Agent finished.")
+            log("[Step] Agent finished.")
             return (text or "Done.").strip(), tool_summary
 
+        # Extract and log model reasoning/thinking from text parts
+        content = response.candidates[0].content
+        if hasattr(content, "parts") and content.parts:
+            for part in content.parts:
+                if hasattr(part, "text") and part.text and part.text.strip():
+                    for line in part.text.strip().split("\n"):
+                        log(f"[Thinking] {line}")
+
         # Add model response (with function calls) to contents
-        contents.append(response.candidates[0].content)
+        contents.append(content)
 
         # Execute tools and build function responses
         user_parts = []
         for fc in function_calls:
             name = fc.name or ""
             args = fc.args or {}
-            args_str = ", ".join(f"{k}={repr(v)[:50]}" for k, v in args.items())
-            log(f"Tool: {name}({args_str})")
+            # Full args for paths and commands (no truncation)
+            args_str = ", ".join(f"{k}={repr(v)}" for k, v in args.items())
+            log(f"[Tool] {name}({args_str})")
             result = _execute_tool(project_dir, name, args)
-            result_preview = str(result)[:80]
-            log(f"Result: {result_preview}")
+            result_preview = _format_result_preview(result, name)
+            log(f"[Result] {result_preview}")
             tool_summary.append(f"{name}({args_str}) -> {result_preview}")
             user_parts.append(types.Part.from_function_response(name=name, response=result))
 
-        log(f"Round {rounds}/{max_tool_rounds}")
+        log(f"[Round] {rounds}/{max_tool_rounds}")
         contents.append(types.Content(role="user", parts=user_parts))
 
     return "Reached maximum tool rounds. Please try a simpler request.", tool_summary

@@ -88,8 +88,9 @@ class SendMessageRequest(BaseModel):
 
 
 class SendMessageResponse(BaseModel):
-    reply: str
+    reply: Optional[str] = None  # None when streaming; client connects to stream
     tool_summary: Optional[list[str]] = None
+    streaming: bool = False  # True = client should connect to GET /stream for logs and reply
 
 
 class AgentDeployRequest(BaseModel):

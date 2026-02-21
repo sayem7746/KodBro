@@ -68,9 +68,17 @@
             <ion-icon [name]="showLogPanel ? 'chevron-down' : 'chevron-forward'" class="text-navy/70"></ion-icon>
           </div>
           @if (showLogPanel) {
-            <div class="p-2 text-xs font-mono overflow-y-auto max-h-48 bg-navy/5 text-navy/90 space-y-0.5">
+            <div
+              #logContainer
+              class="log-container p-2 text-xs font-mono overflow-y-auto max-h-80 bg-navy/5 text-navy/90 space-y-0.5"
+            >
               @for (log of logs; track $index) {
-                <div class="log-line whitespace-pre-wrap break-words">{{ log }}</div>
+                <div
+                  class="log-line whitespace-pre-wrap break-words"
+                  [attr.data-type]="getLogType(log)"
+                >
+                  {{ log }}
+                </div>
               }
             </div>
           }

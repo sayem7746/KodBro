@@ -45,8 +45,10 @@ export interface SendMessageRequest {
 }
 
 export interface SendMessageResponse {
-  reply: string;
-  tool_summary?: string[];
+  reply?: string | null;
+  tool_summary?: string[] | null;
+  /** When true, client should connect to streamSessionLogs for logs and reply. */
+  streaming?: boolean;
 }
 
 export interface AgentDeployRequest {

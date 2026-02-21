@@ -62,8 +62,8 @@ def _push_url(repo_url: str, token: str) -> str:
     return normalized.replace("https://github.com/", f"https://x-access-token:{token}@github.com/")
 
 
-async def _run_agent_background(session_id: str, initial_message: str) -> None:
-    """Background task: run agent with log streaming, emit_done, append assistant reply."""
+def _run_agent_with_messages(session_id: str, messages: list) -> None:
+    """Run agent with given messages; emit logs and done. Used by both create and send_message."""
     project_dir = get_project_dir(session_id)
     if not project_dir:
         emit_error(session_id, "Session has no project dir")
@@ -80,10 +80,9 @@ async def _run_agent_background(session_id: str, initial_message: str) -> None:
             s = get_session(session_id)
             return (s.user_git_token, s.user_repo_name) if s else (None, None)
 
-        reply_text, tool_summary = await asyncio.to_thread(
-            run_agent,
+        reply_text, tool_summary = run_agent(
             project_dir,
-            [{"role": "user", "content": initial_message}],
+            messages,
             session_id,
             get_cursor_state=get_state,
             set_cursor_state=lambda aid, url: set_cursor_agent(session_id, aid, url),
@@ -100,6 +99,24 @@ async def _run_agent_background(session_id: str, initial_message: str) -> None:
             err_msg = str(e)
         emit_error(session_id, err_msg)
         emit_done(session_id, f"Error: {err_msg}", [])
+
+
+async def _run_agent_background(session_id: str, initial_message: str) -> None:
+    """Background task: run agent with log streaming, emit_done, append assistant reply."""
+    await asyncio.to_thread(
+        _run_agent_with_messages,
+        session_id,
+        [{"role": "user", "content": initial_message}],
+    )
+
+
+async def _run_agent_for_message_background(session_id: str) -> None:
+    """Background task for send_message: run agent with full session messages, stream logs."""
+    session = get_session(session_id)
+    if not session:
+        emit_error(session_id, "Session not found")
+        return
+    await asyncio.to_thread(_run_agent_with_messages, session_id, session.messages)
 
 
 @router.post("/sessions", response_model=CreateSessionResponse)
@@ -139,7 +156,7 @@ async def stream_session_logs(
     request: Request,
     user_id: UUID = Depends(get_current_user_id),
 ):
-    """SSE stream of agent logs. Connect when session is created with initial_message."""
+    """SSE stream of agent logs. Connect after create_session (with initial_message) or send_message."""
     if not get_session(session_id):
         raise HTTPException(status_code=404, detail="Session not found")
     q = get_log_queue(session_id)
@@ -190,7 +207,7 @@ async def send_message(
     req: SendMessageRequest,
     user_id: UUID = Depends(get_current_user_id),
 ):
-    """Send a message to the agent and get a reply."""
+    """Send a message to the agent. Returns streaming=True; connect to GET /stream for logs and reply."""
     session = get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -198,38 +215,11 @@ async def send_message(
     if req.git and req.git.token:
         set_user_git(session_id, token=req.git.token, repo_name=req.git.repo_name)
     append_messages(session_id, "user", req.message)
-    messages = session.messages
 
-    try:
-        def get_state():
-            s = get_session(session_id)
-            return (s.cursor_agent_id, s.cursor_repo_url) if s else (None, None)
+    create_log_queue(session_id)
+    asyncio.create_task(_run_agent_for_message_background(session_id))
 
-        def get_user_git_state():
-            s = get_session(session_id)
-            return (s.user_git_token, s.user_repo_name) if s else (None, None)
-
-        reply_text, tool_summary = await asyncio.to_thread(
-            run_agent,
-            session.project_dir,
-            messages,
-            session_id,
-            get_cursor_state=get_state,
-            set_cursor_state=lambda aid, url: set_cursor_agent(session_id, aid, url),
-            get_user_git=get_user_git_state,
-        )
-    except Exception as e:
-        if ClientError and isinstance(e, ClientError) and "429" in str(e):
-            raise HTTPException(
-                status_code=503,
-                detail="AI service is temporarily rate-limited. Please try again in a minute.",
-            ) from e
-        if isinstance(e, (TimeoutError, RuntimeError)) and ("rate limit" in str(e).lower() or "429" in str(e)):
-            raise HTTPException(status_code=503, detail=str(e)) from e
-        raise
-    append_messages(session_id, "assistant", reply_text)
-
-    return SendMessageResponse(reply=reply_text, tool_summary=tool_summary)
+    return SendMessageResponse(reply=None, tool_summary=None, streaming=True)
 
 
 @router.get("/sessions/{session_id}/files", response_model=FilesResponse)

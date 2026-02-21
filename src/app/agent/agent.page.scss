@@ -83,6 +83,32 @@
   --padding-start: 0;
 }
 
+.log-container {
+  overflow-anchor: auto;
+}
+
+.log-line {
+  &[data-type='thinking'] {
+    color: rgba(46, 68, 86, 0.85);
+    padding-left: 0.25rem;
+    border-left: 2px solid rgba(46, 68, 86, 0.25);
+  }
+  &[data-type='tool'] {
+    color: #1e40af;
+    font-weight: 500;
+  }
+  &[data-type='result'] {
+    color: #047857;
+    padding-left: 0.5rem;
+  }
+  &[data-type='round'],
+  &[data-type='step'],
+  &[data-type='polling'] {
+    color: rgba(46, 68, 86, 0.75);
+    font-weight: 500;
+  }
+}
+
 .chat-messages {
   min-height: 200px;
 }
