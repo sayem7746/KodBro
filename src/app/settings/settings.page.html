@@ -1,0 +1,101 @@
+<ion-header [translucent]="true">
+  <ion-toolbar class="app-text">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Settings</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="bg-cream app-text">
+  <div class="settings-inner px-4 py-4 max-w-2xl mx-auto">
+    <h2 class="text-lg font-semibold mb-4">Integration tokens</h2>
+    <p class="text-sm opacity-90 mb-6">
+      Store your tokens securely. They will be used when creating apps or deploying with the agent.
+    </p>
+
+    @if (message) {
+      <ion-note color="success" class="block mb-4">{{ message }}</ion-note>
+    }
+    @if (error) {
+      <ion-note color="danger" class="block mb-4">{{ error }}</ion-note>
+    }
+
+    <div class="space-y-6">
+      <div class="token-section">
+        <ion-item lines="full" class="section-label">
+          <ion-label><strong>GitHub</strong></ion-label>
+          @if (githubStored) {
+            <ion-badge color="success" slot="end">Stored</ion-badge>
+          }
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Personal access token"
+            labelPlacement="stacked"
+            type="password"
+            [(ngModel)]="githubToken"
+            name="githubToken"
+            placeholder="ghp_..."
+          ></ion-input>
+        </ion-item>
+        <ion-button (click)="saveGithub()" [disabled]="saving || !githubToken.trim()">
+          {{ githubStored ? 'Update' : 'Save' }} GitHub token
+        </ion-button>
+      </div>
+
+      <div class="token-section">
+        <ion-item lines="full" class="section-label">
+          <ion-label><strong>Vercel</strong></ion-label>
+          @if (vercelStored) {
+            <ion-badge color="success" slot="end">Stored</ion-badge>
+          }
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Vercel API token"
+            labelPlacement="stacked"
+            type="password"
+            [(ngModel)]="vercelToken"
+            name="vercelToken"
+            placeholder="..."
+          ></ion-input>
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Team ID (optional)"
+            labelPlacement="stacked"
+            [(ngModel)]="vercelTeamId"
+            name="vercelTeamId"
+            placeholder="team_..."
+          ></ion-input>
+        </ion-item>
+        <ion-button (click)="saveVercel()" [disabled]="saving || !vercelToken.trim()">
+          {{ vercelStored ? 'Update' : 'Save' }} Vercel token
+        </ion-button>
+      </div>
+
+      <div class="token-section">
+        <ion-item lines="full" class="section-label">
+          <ion-label><strong>Railway</strong></ion-label>
+          @if (railwayStored) {
+            <ion-badge color="success" slot="end">Stored</ion-badge>
+          }
+        </ion-item>
+        <ion-item lines="none" class="create-app-item">
+          <ion-input
+            label="Railway API token"
+            labelPlacement="stacked"
+            type="password"
+            [(ngModel)]="railwayToken"
+            name="railwayToken"
+            placeholder="..."
+          ></ion-input>
+        </ion-item>
+        <ion-button (click)="saveRailway()" [disabled]="saving || !railwayToken.trim()">
+          {{ railwayStored ? 'Update' : 'Save' }} Railway token
+        </ion-button>
+      </div>
+    </div>
+  </div>
+</ion-content>

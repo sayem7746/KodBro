@@ -38,11 +38,16 @@ def create_github_repo(token: str, name: str, description: str, private: bool = 
     }
     with httpx.Client(timeout=30) as client:
         resp = client.post(url, json=payload, headers=headers)
+        err_body = resp.json() if resp.content and resp.headers.get("content-type", "").startswith("application/json") else {}
         if resp.status_code == 403:
-            err_body = resp.json() if resp.content else {}
             msg = err_body.get("message", "Forbidden")
             hint = "Check that your token has the 'repo' scope (classic) or 'Contents' + 'Metadata' write (fine-grained). Token may be expired."
             raise RuntimeError(f"GitHub API 403: {msg}. {hint}")
+        if resp.status_code == 422:
+            msg = err_body.get("message", "Validation failed")
+            errors = err_body.get("errors", [])
+            details = "; ".join(e.get("message", str(e)) for e in errors) if errors else msg
+            raise RuntimeError(f"GitHub API 422: {details}. Common causes: repository name already exists, or invalid name format.")
         resp.raise_for_status()
         data = resp.json()
         return data.get("clone_url") or (data.get("html_url", "") + ".git")

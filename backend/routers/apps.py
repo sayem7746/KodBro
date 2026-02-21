@@ -4,12 +4,13 @@ App creation API: POST /api/apps/create, GET /api/apps/status/{job_id}
 import asyncio
 import re
 import shutil
-import uuid
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from deps import get_current_user_id
 from models import CreateAppRequest, CreateAppResponse, AppStatusResponse, JobStatus
-from job_store import get_status, set_status
+from job_store import create_job, get_status, set_status, use_db as _job_store_has_db
 
 router = APIRouter(prefix="/api/apps", tags=["apps"])
 
@@ -30,21 +31,35 @@ def _push_url(repo_url: str, token: str) -> str:
 
 
 @router.post("/create", response_model=CreateAppResponse)
-async def create_app(req: CreateAppRequest) -> CreateAppResponse:
+async def create_app(req: CreateAppRequest, user_id: UUID = Depends(get_current_user_id)) -> CreateAppResponse:
     app_name_slug = _slug(req.app_name)
     if not app_name_slug:
         raise HTTPException(status_code=400, detail="Invalid app name")
-    job_id = str(uuid.uuid4())
-    set_status(job_id, JobStatus.PENDING, message="Queued")
+    job_id = create_job(user_id, req.app_name, req.description, req.prompt)
     asyncio.create_task(_run_pipeline(job_id, req))
     return CreateAppResponse(job_id=job_id)
 
 
 @router.get("/status/{job_id}", response_model=AppStatusResponse)
-async def get_app_status(job_id: str) -> AppStatusResponse:
+async def get_app_status(job_id: str, user_id: UUID = Depends(get_current_user_id)) -> AppStatusResponse:
     status = get_status(job_id)
     if status is None:
         raise HTTPException(status_code=404, detail="Job not found")
+    # Verify job belongs to user when using DB
+    if _job_store_has_db():
+        from database import AppJob, SessionLocal
+        from uuid import UUID as U
+        try:
+            uid = U(job_id)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Job not found")
+        db = SessionLocal()
+        try:
+            row = db.query(AppJob).filter(AppJob.id == uid).first()
+            if row and row.user_id != user_id:
+                raise HTTPException(status_code=404, detail="Job not found")
+        finally:
+            db.close()
     return status
 
 

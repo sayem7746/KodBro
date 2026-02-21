@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { AuthService } from './auth.service';
 
 const DEFAULT_API_BASE = 'https://agent.kodbro.com';
 
@@ -54,6 +55,8 @@ export interface AppStatusResponse {
 export class AppCreateService {
   private apiBase = DEFAULT_API_BASE;
 
+  constructor(private auth: AuthService) {}
+
   setApiBase(url: string): void {
     this.apiBase = url.replace(/\/+$/, '');
   }
@@ -62,10 +65,16 @@ export class AppCreateService {
     return this.apiBase;
   }
 
+  private getHeaders(): Record<string, string> {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    Object.assign(h, this.auth.getAuthHeaders());
+    return h;
+  }
+
   async createApp(req: CreateAppRequest): Promise<CreateAppResponse> {
     const res = await fetch(`${this.apiBase}/api/apps/create`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify(req),
     });
     const data = (await res.json().catch(() => ({}))) as CreateAppResponse & { detail?: string };
@@ -76,7 +85,9 @@ export class AppCreateService {
   }
 
   async getStatus(jobId: string): Promise<AppStatusResponse> {
-    const res = await fetch(`${this.apiBase}/api/apps/status/${jobId}`);
+    const res = await fetch(`${this.apiBase}/api/apps/status/${jobId}`, {
+      headers: this.getHeaders(),
+    });
     if (!res.ok) {
       if (res.status === 404) throw new Error('Job not found');
       throw new Error('Status check failed');

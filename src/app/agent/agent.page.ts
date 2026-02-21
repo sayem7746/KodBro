@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { environment } from '../../environments/environment';
 import {
   AgentService,
   CreateSessionResponse,
@@ -8,6 +9,7 @@ import {
   AgentDeployResponse,
   AgentGitConfig,
 } from '../services/agent.service';
+import { AuthService } from '../services/auth.service';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -40,7 +42,7 @@ export class AgentPage implements OnInit, OnDestroy {
   // GitHub connection (optional, for Cursor agent - create repos in user's account)
   showGitConnect = false;
   agentGitToken = '';
-  agentRepoName = 'my-app';
+  agentRepoName = '';
   agentGitCreateNew = true;
 
   // Chat input
@@ -57,18 +59,82 @@ export class AgentPage implements OnInit, OnDestroy {
   deployResult: AgentDeployResponse | null = null;
   deploying = false;
 
+  gitTokenStored = false;
+  vercelTokenStored = false;
+
+  private storedAgentGitToken: string | null = null;
+  private storedDeployGitToken: string | null = null;
+  private storedDeployVercelToken: string | null = null;
+
   constructor(
     private agent: AgentService,
     private router: Router,
     private route: ActivatedRoute,
+    private auth: AuthService,
   ) {}
 
+  private async loadStoredTokens(): Promise<void> {
+    const base = this.auth.getApiBase();
+    const headers = this.auth.getAuthHeaders();
+    try {
+      const [gitRes, vercelRes] = await Promise.all([
+        fetch(`${base}/api/user/tokens/github`, { headers }),
+        fetch(`${base}/api/user/tokens/vercel`, { headers }),
+      ]);
+      if (gitRes.ok) {
+        const d = (await gitRes.json()) as { value?: string };
+        if (d.value) {
+          this.storedAgentGitToken = d.value;
+          this.storedDeployGitToken = d.value;
+          this.gitTokenStored = true;
+        }
+      }
+      if (vercelRes.ok) {
+        const d = (await vercelRes.json()) as { value?: string };
+        if (d.value) {
+          this.storedDeployVercelToken = d.value;
+          this.vercelTokenStored = true;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  private get effectiveAgentGitToken(): string {
+    const t = this.agentGitToken?.trim();
+    return t || this.storedAgentGitToken || '';
+  }
+
+  private get effectiveDeployGitToken(): string {
+    const t = this.gitToken?.trim();
+    return t || this.storedDeployGitToken || '';
+  }
+
+  private get effectiveDeployVercelToken(): string {
+    const t = this.vercelToken?.trim();
+    return t || this.storedDeployVercelToken || '';
+  }
+
   ngOnInit(): void {
+    const defaults = environment.agentDefaults;
+    this.initialPrompt = defaults?.initialPrompt ?? '';
+    this.agentGitToken = '';
+    this.agentRepoName = defaults?.repoNamePrefix
+      ? `${defaults.repoNamePrefix}-${this.randomHash()}`
+      : `my-app-${this.randomHash()}`;
+
+    void this.loadStoredTokens();
+
     const prompt = this.route.snapshot.queryParamMap.get('prompt');
     if (prompt?.trim()) {
       this.initialPrompt = prompt.trim();
       void this.startSession();
     }
+  }
+
+  private randomHash(): string {
+    return Math.random().toString(36).substring(2, 10);
   }
 
   ngOnDestroy(): void {
@@ -86,9 +152,9 @@ export class AgentPage implements OnInit, OnDestroy {
     this.logs = [];
     try {
       const git: AgentGitConfig | undefined =
-        this.agentGitToken?.trim()
+        this.effectiveAgentGitToken
           ? {
-              token: this.agentGitToken.trim(),
+              token: this.effectiveAgentGitToken,
               repo_name: this.agentRepoName?.trim() || undefined,
               create_new: this.agentGitCreateNew,
             }
@@ -144,9 +210,9 @@ export class AgentPage implements OnInit, OnDestroy {
 
     try {
       const git: AgentGitConfig | undefined =
-        this.agentGitToken?.trim()
+        this.effectiveAgentGitToken
           ? {
-              token: this.agentGitToken.trim(),
+              token: this.effectiveAgentGitToken,
               repo_name: this.agentRepoName?.trim() || undefined,
               create_new: this.agentGitCreateNew,
             }
@@ -181,12 +247,12 @@ export class AgentPage implements OnInit, OnDestroy {
       this.error = 'App name is required';
       return;
     }
-    if (!this.gitToken?.trim()) {
-      this.error = 'Git token is required';
+    if (!this.effectiveDeployGitToken) {
+      this.error = 'Git token is required (enter one or save in Settings)';
       return;
     }
-    if (!this.vercelToken?.trim()) {
-      this.error = 'Vercel token is required';
+    if (!this.effectiveDeployVercelToken) {
+      this.error = 'Vercel token is required (enter one or save in Settings)';
       return;
     }
     if (!this.gitCreateNew && !this.gitRepoUrl?.trim()) {
@@ -202,12 +268,12 @@ export class AgentPage implements OnInit, OnDestroy {
         app_name: this.deployAppName.trim(),
         git: {
           provider: 'github',
-          token: this.gitToken.trim(),
+          token: this.effectiveDeployGitToken,
           create_new: this.gitCreateNew,
           repo_url: this.gitRepoUrl?.trim() || undefined,
         },
         vercel: {
-          token: this.vercelToken.trim(),
+          token: this.effectiveDeployVercelToken,
           team_id: this.vercelTeamId?.trim() || undefined,
         },
       };

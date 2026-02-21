@@ -3,7 +3,11 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  agentDefaults: {
+    initialPrompt: 'create an todo app based on nextjs',
+    repoNamePrefix: 'my-app',
+  },
 };
 
 /*

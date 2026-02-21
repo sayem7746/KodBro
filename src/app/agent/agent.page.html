@@ -30,7 +30,7 @@
             <ion-label class="text-navy">Connect GitHub</ion-label>
           </ion-item>
           @if (showGitConnect) {
-            <div class="pl-6 pr-4 pb-3 space-y-2">
+            <div class="git-connect-fields pl-6 pr-4 pb-3 space-y-2 mt-1">
               <p class="text-sm text-navy/70">Connect your GitHub account to use the Cursor agent. Create a token at GitHub → Settings → Developer settings → Personal access tokens. For classic tokens, enable the <strong>repo</strong> scope. For fine-grained tokens, grant "Contents" and "Metadata" write access.</p>
               <ion-item lines="none">
                 <ion-input
@@ -128,13 +128,13 @@
         }
 
         <!-- Connect GitHub (when in session - for Cursor agent) -->
-        <div class="git-connect-section px-3 py-1 border-t border-navy/10">
+        <div class="git-connect-section border-t border-navy/10">
           <ion-item lines="none" button (click)="showGitConnect = !showGitConnect" class="cursor-pointer min-h-[36px]">
             <ion-icon [name]="showGitConnect ? 'chevron-down' : 'chevron-forward'" slot="start" class="text-navy/70"></ion-icon>
             <ion-label class="text-sm text-navy">Connect GitHub (for Cursor agent)</ion-label>
           </ion-item>
           @if (showGitConnect) {
-            <div class="pl-4 pr-2 pb-2 space-y-2">
+            <div class="git-connect-fields pl-4 pr-2 pb-2 space-y-2 mt-1">
               <ion-item lines="none" class="min-h-0">
                 <ion-input
                   label="Personal access token"

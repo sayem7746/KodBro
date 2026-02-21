@@ -1,10 +1,11 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   AppCreateService,
   CreateAppRequest,
   AppStatusResponse,
 } from '../services/app-create.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-create-app',
@@ -12,7 +13,7 @@ import {
   styleUrls: ['./create-app.page.scss'],
   standalone: false,
 })
-export class CreateAppPage implements OnDestroy {
+export class CreateAppPage implements OnInit, OnDestroy {
   appName = '';
   description = '';
   prompt = '';
@@ -23,16 +24,65 @@ export class CreateAppPage implements OnDestroy {
   vercelTeamId = '';
   vercelProjectName = '';
 
+  gitTokenStored = false;
+  vercelTokenStored = false;
+
   submitting = false;
   error: string | null = null;
   jobId: string | null = null;
   status: AppStatusResponse | null = null;
   pollInterval: ReturnType<typeof setInterval> | null = null;
 
+  private storedGitToken: string | null = null;
+  private storedVercelToken: string | null = null;
+  private storedVercelTeamId: string | null = null;
+
   constructor(
     private appCreate: AppCreateService,
-    private router: Router
+    private router: Router,
+    private auth: AuthService,
   ) {}
+
+  ngOnInit(): void {
+    void this.loadStoredTokens();
+  }
+
+  private async loadStoredTokens(): Promise<void> {
+    const base = this.auth.getApiBase();
+    const headers = this.auth.getAuthHeaders();
+    try {
+      const [gitRes, vercelRes] = await Promise.all([
+        fetch(`${base}/api/user/tokens/github`, { headers }),
+        fetch(`${base}/api/user/tokens/vercel`, { headers }),
+      ]);
+      if (gitRes.ok) {
+        const d = (await gitRes.json()) as { value?: string };
+        if (d.value) {
+          this.storedGitToken = d.value;
+          this.gitTokenStored = true;
+        }
+      }
+      if (vercelRes.ok) {
+        const d = (await vercelRes.json()) as { value?: string };
+        if (d.value) {
+          this.storedVercelToken = d.value;
+          this.vercelTokenStored = true;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  private get effectiveGitToken(): string {
+    const t = this.gitToken?.trim();
+    return t || this.storedGitToken || '';
+  }
+
+  private get effectiveVercelToken(): string {
+    const t = this.vercelToken?.trim();
+    return t || this.storedVercelToken || '';
+  }
 
   ngOnDestroy(): void {
     this.stopPolling();
@@ -55,12 +105,12 @@ export class CreateAppPage implements OnDestroy {
       this.error = 'Prompt is required';
       return;
     }
-    if (!this.gitToken?.trim()) {
-      this.error = 'Git token is required';
+    if (!this.effectiveGitToken) {
+      this.error = 'Git token is required (enter one or save in Settings)';
       return;
     }
-    if (!this.vercelToken?.trim()) {
-      this.error = 'Vercel token is required';
+    if (!this.effectiveVercelToken) {
+      this.error = 'Vercel token is required (enter one or save in Settings)';
       return;
     }
     if (!this.gitCreateNew && !this.gitRepoUrl?.trim()) {
@@ -76,13 +126,13 @@ export class CreateAppPage implements OnDestroy {
         prompt: this.prompt.trim(),
         git: {
           provider: 'github',
-          token: this.gitToken.trim(),
+          token: this.effectiveGitToken,
           create_new: this.gitCreateNew,
           repo_url: this.gitRepoUrl?.trim() || undefined,
         },
         vercel: {
-          token: this.vercelToken.trim(),
-          team_id: this.vercelTeamId?.trim() || undefined,
+          token: this.effectiveVercelToken,
+          team_id: this.vercelTeamId?.trim() || this.storedVercelTeamId || undefined,
           project_name: this.vercelProjectName?.trim() || undefined,
         },
       };

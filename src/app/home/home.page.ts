@@ -1,5 +1,6 @@
 import { Component, ViewChild, ElementRef, AfterViewChecked, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 import { TerminalService } from '../services/terminal.service';
 
 @Component({
@@ -18,7 +19,13 @@ export class HomePage implements OnInit, AfterViewChecked {
   constructor(
     public terminal: TerminalService,
     private router: Router,
+    private auth: AuthService,
   ) {}
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/auth']);
+  }
 
   ngOnInit(): void {
     if (!this.terminal.connection.connected) {

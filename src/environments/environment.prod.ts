@@ -1,3 +1,6 @@
 export const environment = {
-  production: true
+  production: true,
+  agentDefaults: undefined as
+    | { initialPrompt: string; repoNamePrefix: string }
+    | undefined,
 };

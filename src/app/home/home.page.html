@@ -4,6 +4,9 @@
     <ion-buttons slot="end">
       <ion-button [routerLink]="['/agent']">Build with Agent</ion-button>
       <ion-button [routerLink]="['/create-app']">Create app</ion-button>
+      <ion-button [routerLink]="['/history']">My Apps</ion-button>
+      <ion-button [routerLink]="['/settings']">Settings</ion-button>
+      <ion-button (click)="logout()">Sign out</ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

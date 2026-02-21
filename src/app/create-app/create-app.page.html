@@ -45,6 +45,9 @@
 
         <ion-item lines="full" class="section-label">
           <ion-label><strong>Git (GitHub)</strong></ion-label>
+          @if (gitTokenStored) {
+            <ion-badge color="success" slot="end">Using stored</ion-badge>
+          }
         </ion-item>
         <ion-item lines="none" class="create-app-item">
           <ion-input
@@ -53,8 +56,7 @@
             type="password"
             [(ngModel)]="gitToken"
             name="gitToken"
-            placeholder="ghp_..."
-            required
+            [placeholder]="gitTokenStored ? 'Leave empty to use stored token' : 'ghp_...'"
           ></ion-input>
         </ion-item>
         <ion-item lines="none">
@@ -76,6 +78,9 @@
 
         <ion-item lines="full" class="section-label">
           <ion-label><strong>Vercel</strong></ion-label>
+          @if (vercelTokenStored) {
+            <ion-badge color="success" slot="end">Using stored</ion-badge>
+          }
         </ion-item>
         <ion-item lines="none" class="create-app-item">
           <ion-input
@@ -84,8 +89,7 @@
             type="password"
             [(ngModel)]="vercelToken"
             name="vercelToken"
-            placeholder="..."
-            required
+            [placeholder]="vercelTokenStored ? 'Leave empty to use stored token' : '...'"
           ></ion-input>
         </ion-item>
         <ion-item lines="none" class="create-app-item">

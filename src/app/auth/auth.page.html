@@ -3,23 +3,34 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/welcome"></ion-back-button>
     </ion-buttons>
-    <ion-title class="font-semibold">Sign in</ion-title>
+    <ion-title class="font-semibold">{{ isSignUp ? 'Create account' : 'Sign in' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="bg-cream">
   <div class="auth-inner flex flex-col min-h-full px-6 py-8">
     <div class="auth-header mb-8">
-      <h1 class="text-2xl font-bold mb-1 text-navy">Welcome back</h1>
-      <p class="text-sm opacity-90 text-steel">Enter your details to continue.</p>
+      <h1 class="text-2xl font-bold mb-1 text-navy">{{ isSignUp ? 'Create an account' : 'Welcome back' }}</h1>
+      <p class="text-sm opacity-90 text-steel">{{ isSignUp ? 'Enter your details to get started.' : 'Enter your details to continue.' }}</p>
     </div>
 
-    <form class="space-y-4" (ngSubmit)="signIn()">
+    <form class="space-y-4" (ngSubmit)="onSubmit()">
       <ion-item lines="none" class="auth-input rounded-xl ion-no-padding">
         <ion-label position="stacked" class="font-medium">Email</ion-label>
         <ion-input
           type="email"
           placeholder="you@example.com"
+          [(ngModel)]="email"
+          name="email"
+        ></ion-input>
+      </ion-item>
+      <ion-item lines="none" class="auth-input rounded-xl ion-no-padding" *ngIf="isSignUp">
+        <ion-label position="stacked" class="font-medium">Display name (optional)</ion-label>
+        <ion-input
+          type="text"
+          placeholder="Your name"
+          [(ngModel)]="displayName"
+          name="displayName"
         ></ion-input>
       </ion-item>
       <ion-item lines="none" class="auth-input rounded-xl ion-no-padding">
@@ -27,20 +38,27 @@
         <ion-input
           type="password"
           placeholder="••••••••"
+          [(ngModel)]="password"
+          name="password"
         ></ion-input>
       </ion-item>
+
+      <p class="text-sm text-red-600" *ngIf="error">{{ error }}</p>
 
       <ion-button
         expand="block"
         type="submit"
+        [disabled]="loading"
         class="ion-button--red mt-6 h-12 rounded-xl font-semibold"
       >
-        Sign in
+        {{ loading ? 'Please wait...' : (isSignUp ? 'Create account' : 'Sign in') }}
       </ion-button>
 
       <p class="text-center text-sm mt-4 opacity-90">
-        Don't have an account?
-        <a href="#" class="auth-link font-medium">Create one</a>
+        {{ isSignUp ? 'Already have an account?' : "Don't have an account?" }}
+        <a href="#" class="auth-link font-medium" (click)="toggleMode(); $event.preventDefault()">
+          {{ isSignUp ? 'Sign in' : 'Create one' }}
+        </a>
       </p>
     </form>
   </div>

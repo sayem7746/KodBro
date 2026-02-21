@@ -1,6 +1,7 @@
 """
 In-memory session store for the app-building agent.
 Each session has a project directory and message history.
+Persists metadata to DB when DATABASE_URL is set.
 """
 import os
 import shutil
@@ -8,6 +9,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from typing import Optional, Union
+from uuid import UUID
 
 PREFIX = "kodbro_agent_"
 
@@ -26,7 +28,15 @@ class AgentSession:
 _store: dict[str, AgentSession] = {}
 
 
-def create_session() -> str:
+def _use_db() -> bool:
+    try:
+        from database import SessionLocal
+        return SessionLocal is not None
+    except Exception:
+        return False
+
+
+def create_session(user_id: Optional[UUID] = None) -> str:
     """Create a new session with an empty project directory. Returns session_id."""
     session_id = str(uuid.uuid4())
     project_dir = tempfile.mkdtemp(prefix=PREFIX)
@@ -35,6 +45,16 @@ def create_session() -> str:
         project_dir=project_dir,
         messages=[],
     )
+    if _use_db() and user_id:
+        try:
+            from database import AgentSession as AgentSessionModel, SessionLocal
+            db = SessionLocal()
+            row = AgentSessionModel(user_id=user_id, session_uuid=session_id)
+            db.add(row)
+            db.commit()
+            db.close()
+        except Exception:
+            pass
     return session_id
 
 
@@ -55,6 +75,17 @@ def append_messages(session_id: str, role: str, content: Union[str, list]) -> No
     if not s:
         raise KeyError(f"Session {session_id} not found")
     s.messages.append({"role": role, "content": content})
+    if _use_db() and role == "assistant":
+        try:
+            from database import AgentSession as AgentSessionModel, SessionLocal
+            db = SessionLocal()
+            row = db.query(AgentSessionModel).filter(AgentSessionModel.session_uuid == session_id).first()
+            if row:
+                row.message_count = (row.message_count or 0) + 1
+                db.commit()
+            db.close()
+        except Exception:
+            pass
 
 
 def set_cursor_agent(session_id: str, agent_id: str, repo_url: str) -> None:
@@ -64,6 +95,18 @@ def set_cursor_agent(session_id: str, agent_id: str, repo_url: str) -> None:
         raise KeyError(f"Session {session_id} not found")
     s.cursor_agent_id = agent_id
     s.cursor_repo_url = repo_url
+    if _use_db():
+        try:
+            from database import AgentSession as AgentSessionModel, SessionLocal
+            db = SessionLocal()
+            row = db.query(AgentSessionModel).filter(AgentSessionModel.session_uuid == session_id).first()
+            if row:
+                row.cursor_agent_id = agent_id
+                row.cursor_repo_url = repo_url
+                db.commit()
+            db.close()
+        except Exception:
+            pass
 
 
 def set_user_git(session_id: str, token: Optional[str] = None, repo_name: Optional[str] = None) -> None:

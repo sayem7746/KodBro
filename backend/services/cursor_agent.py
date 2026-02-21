@@ -61,11 +61,13 @@ def _ensure_repo_and_push(
         with open(readme, "w") as f:
             f.write("# KodBro Agent Project\n\nCreated by KodBro.\n")
 
+    unique_suffix = uuid.uuid4().hex[:8]
     if repo_name and repo_name.strip():
-        repo_name = _slug(repo_name.strip())
+        base = _slug(repo_name.strip())
+        repo_name = f"{base}-{unique_suffix}" if base else f"kodbro-app-{unique_suffix}"
     else:
         slug = re.sub(r"[^a-zA-Z0-9-]", "-", session_id)[:36]
-        repo_name = f"kodbro-agent-{slug}-{uuid.uuid4().hex[:8]}"
+        repo_name = f"kodbro-agent-{slug}-{unique_suffix}"
     repo_url = create_github_repo(
         github_token,
         repo_name,

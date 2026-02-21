@@ -6,8 +6,9 @@ import json
 import queue
 import re
 import shutil
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from agent_log_store import (
@@ -43,6 +44,7 @@ from models import (
     FileEntry,
     FilesResponse,
 )
+from deps import get_current_user_id
 from services.agent_loop import run_agent, read_file as tool_read_file, list_dir as tool_list_dir
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
@@ -101,11 +103,14 @@ async def _run_agent_background(session_id: str, initial_message: str) -> None:
 
 
 @router.post("/sessions", response_model=CreateSessionResponse)
-async def create_agent_session(req: CreateSessionRequest = CreateSessionRequest()):
+async def create_agent_session(
+    req: CreateSessionRequest = CreateSessionRequest(),
+    user_id: UUID = Depends(get_current_user_id),
+):
     """Create a new agent session. Optionally send initial_message to get first reply.
     When initial_message is present, returns session_id immediately and runs agent in background.
     Connect to GET /sessions/{session_id}/stream for real-time logs."""
-    session_id = create_session()
+    session_id = create_session(user_id=user_id)
     reply = None
     history = None
 
@@ -129,7 +134,11 @@ async def create_agent_session(req: CreateSessionRequest = CreateSessionRequest(
 
 
 @router.get("/sessions/{session_id}/stream")
-async def stream_session_logs(session_id: str, request: Request):
+async def stream_session_logs(
+    session_id: str,
+    request: Request,
+    user_id: UUID = Depends(get_current_user_id),
+):
     """SSE stream of agent logs. Connect when session is created with initial_message."""
     if not get_session(session_id):
         raise HTTPException(status_code=404, detail="Session not found")
@@ -176,7 +185,11 @@ async def stream_session_logs(session_id: str, request: Request):
 
 
 @router.post("/sessions/{session_id}/messages", response_model=SendMessageResponse)
-async def send_message(session_id: str, req: SendMessageRequest):
+async def send_message(
+    session_id: str,
+    req: SendMessageRequest,
+    user_id: UUID = Depends(get_current_user_id),
+):
     """Send a message to the agent and get a reply."""
     session = get_session(session_id)
     if not session:
@@ -220,7 +233,11 @@ async def send_message(session_id: str, req: SendMessageRequest):
 
 
 @router.get("/sessions/{session_id}/files", response_model=FilesResponse)
-async def get_files(session_id: str, path: str = "."):
+async def get_files(
+    session_id: str,
+    path: str = ".",
+    user_id: UUID = Depends(get_current_user_id),
+):
     """List files in the session project directory."""
     project_dir = get_project_dir(session_id)
     if not project_dir:
@@ -235,7 +252,11 @@ async def get_files(session_id: str, path: str = "."):
 
 
 @router.get("/sessions/{session_id}/files/read")
-async def read_file_content(session_id: str, path: str):
+async def read_file_content(
+    session_id: str,
+    path: str,
+    user_id: UUID = Depends(get_current_user_id),
+):
     """Read a file's content from the session project."""
     project_dir = get_project_dir(session_id)
     if not project_dir:
@@ -248,7 +269,11 @@ async def read_file_content(session_id: str, path: str):
 
 
 @router.post("/sessions/{session_id}/deploy", response_model=AgentDeployResponse)
-async def deploy_session(session_id: str, req: AgentDeployRequest):
+async def deploy_session(
+    session_id: str,
+    req: AgentDeployRequest,
+    user_id: UUID = Depends(get_current_user_id),
+):
     """Deploy the session project to GitHub and Vercel."""
     project_dir = get_project_dir(session_id)
     if not project_dir:
@@ -305,7 +330,10 @@ async def deploy_session(session_id: str, req: AgentDeployRequest):
 
 
 @router.delete("/sessions/{session_id}")
-async def delete_agent_session(session_id: str):
+async def delete_agent_session(
+    session_id: str,
+    user_id: UUID = Depends(get_current_user_id),
+):
     """Delete a session and clean up its project directory."""
     if not get_session(session_id):
         raise HTTPException(status_code=404, detail="Session not found")

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { AuthService } from './auth.service';
 
 const DEFAULT_API_BASE = 'https://agent.kodbro.com';
 
@@ -64,12 +65,20 @@ export interface AgentDeployResponse {
 export class AgentService {
   private apiBase = DEFAULT_API_BASE;
 
+  constructor(private auth: AuthService) {}
+
   setApiBase(url: string): void {
     this.apiBase = url.replace(/\/+$/, '');
   }
 
   getApiBase(): string {
     return this.apiBase;
+  }
+
+  private getHeaders(): Record<string, string> {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    Object.assign(h, this.auth.getAuthHeaders());
+    return h;
   }
 
   async createSession(
@@ -86,7 +95,7 @@ export class AgentService {
     }
     const res = await fetch(`${this.apiBase}/api/agent/sessions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify(body),
     });
     const data = (await res.json().catch(() => ({}))) as CreateSessionResponse & { detail?: string };
@@ -111,7 +120,7 @@ export class AgentService {
     }
     const res = await fetch(`${this.apiBase}/api/agent/sessions/${sessionId}/messages`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify(body),
     });
     const data = (await res.json().catch(() => ({}))) as SendMessageResponse & { detail?: string };
@@ -123,7 +132,9 @@ export class AgentService {
 
   async getFiles(sessionId: string, path = '.'): Promise<{ entries: Array<{ name: string; type: string }>; path: string }> {
     const encoded = encodeURIComponent(path);
-    const res = await fetch(`${this.apiBase}/api/agent/sessions/${sessionId}/files?path=${encoded}`);
+    const res = await fetch(`${this.apiBase}/api/agent/sessions/${sessionId}/files?path=${encoded}`, {
+      headers: this.getHeaders(),
+    });
     if (!res.ok) {
       throw new Error('Failed to list files');
     }
@@ -133,7 +144,7 @@ export class AgentService {
   async deploy(sessionId: string, req: AgentDeployRequest): Promise<AgentDeployResponse> {
     const res = await fetch(`${this.apiBase}/api/agent/sessions/${sessionId}/deploy`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify(req),
     });
     const data = (await res.json().catch(() => ({}))) as AgentDeployResponse & { detail?: string };
@@ -146,6 +157,7 @@ export class AgentService {
   async deleteSession(sessionId: string): Promise<void> {
     const res = await fetch(`${this.apiBase}/api/agent/sessions/${sessionId}`, {
       method: 'DELETE',
+      headers: this.getHeaders(),
     });
     if (!res.ok) {
       throw new Error('Failed to delete session');
@@ -164,7 +176,7 @@ export class AgentService {
 
       (async () => {
         try {
-          const res = await fetch(url);
+          const res = await fetch(url, { headers: this.getHeaders() });
           if (!res.ok) {
             subscriber.error(new Error(`Stream failed: ${res.statusText}`));
             return;

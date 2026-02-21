@@ -91,6 +91,17 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+def startup():
+    """Initialize database tables at startup (migrations run at runtime)."""
+    try:
+        from database import init_db
+        init_db()
+    except Exception as e:
+        import sys
+        print(f"DB init skipped or failed: {e}", file=sys.stderr)
+
+
 @app.post("/api/run", response_model=RunCommandResponse)
 async def api_run(req: RunCommandRequest) -> RunCommandResponse:
     """Run a terminal command and return stdout, stderr, and exit code."""
@@ -131,6 +142,14 @@ async def health() -> dict:
         debug["debug_error"] = f"{type(e).__name__}: {str(e)}"
     return {"status": "ok", "service": "terminal-api", "debug": debug}
 
+
+# ----- Auth API -----
+from routers.auth import router as auth_router
+app.include_router(auth_router)
+
+# ----- User tokens API -----
+from routers.user import router as user_router
+app.include_router(user_router)
 
 # ----- App creation API -----
 from routers.apps import router as apps_router

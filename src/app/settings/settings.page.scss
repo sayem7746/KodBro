@@ -1,0 +1,14 @@
+.settings-inner {
+  .token-section {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--ion-color-light);
+  }
+  .section-label {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+  }
+  .create-app-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+  }
+}
