@@ -1,5 +1,6 @@
 """
 JWT and password utilities for authentication.
+Uses bcrypt_sha256 to avoid bcrypt's 72-byte limit (pre-hashes with SHA-256).
 """
 import os
 from datetime import datetime, timedelta
@@ -9,31 +10,23 @@ from uuid import UUID
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+# bcrypt_sha256 primary: avoids bcrypt 72-byte limit. bcrypt for verifying old hashes.
 pwd_context = CryptContext(
-    schemes=["bcrypt"],
+    schemes=["bcrypt_sha256", "bcrypt"],
     deprecated="auto",
-    bcrypt__truncate_error=False,  # Truncate passwords > 72 bytes instead of raising
+    bcrypt__truncate_error=False,
 )
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24 * 7  # 7 days
-BCRYPT_MAX_BYTES = 72
-
-
-def _truncate_for_bcrypt(password: str) -> str:
-    """Bcrypt has a 72-byte limit. Truncate to fit."""
-    encoded = password.encode("utf-8")
-    if len(encoded) <= BCRYPT_MAX_BYTES:
-        return password
-    return encoded[:BCRYPT_MAX_BYTES].decode("utf-8", errors="replace")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(_truncate_for_bcrypt(password))
+    return pwd_context.hash(password)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(_truncate_for_bcrypt(plain), hashed)
+    return pwd_context.verify(plain, hashed)
 
 
 def create_access_token(user_id: UUID, email: str) -> str:
