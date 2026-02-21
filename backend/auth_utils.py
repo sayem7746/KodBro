@@ -13,14 +13,23 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24 * 7  # 7 days
+BCRYPT_MAX_BYTES = 72
+
+
+def _truncate_for_bcrypt(password: str) -> str:
+    """Bcrypt has a 72-byte limit. Truncate to fit."""
+    encoded = password.encode("utf-8")
+    if len(encoded) <= BCRYPT_MAX_BYTES:
+        return password
+    return encoded[:BCRYPT_MAX_BYTES].decode("utf-8", errors="replace")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(_truncate_for_bcrypt(password))
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return pwd_context.verify(_truncate_for_bcrypt(plain), hashed)
 
 
 def create_access_token(user_id: UUID, email: str) -> str:
